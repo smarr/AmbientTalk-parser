@@ -361,11 +361,11 @@ NAM_OR_KEY options { paraphrase = "a name or a keyword"; }: ( NAM COLON ) => KEY
           |   NAM                 { $setType(NAM); }
     ;
 
-WHITESPACE: ('\t' |  ' ')
+WHITESPACE options { paraphrase = "whitespace"; }: ('\t' |  ' ')
            { $setType(Token.SKIP); }
     ;
     
-NEWLINE:  ( "\r\n" | '\r' | '\n')
+NEWLINE options { paraphrase = "newline"; }:  ( "\r\n" | '\r' | '\n')
           { newline(); 
             $setType(Token.SKIP); }
     ;
@@ -557,7 +557,7 @@ literal returns[ATExpression lit]
   	ATBegin body; }
           : #(AGNBR nbr:NBR) { lit = NATNumber.atValue(Integer.parseInt(nbr.getText())); }
           | #(AGFRC frc:FRC) { lit = NATFraction.atValue(Double.parseDouble(frc.getText())); }
-          | #(AGTXT txt:TXT) { lit = NATText.atValue(txt.getText()); }
+          | #(AGTXT txt:TXT) { String text = txt.getText(); lit = NATText.atValue(text.substring(1, text.length() - 1)); }
           | lit=table
           | #(AGCLO par=table body=begin) { lit = new AGClosureLiteral(par, body); }
           ;
