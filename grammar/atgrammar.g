@@ -43,11 +43,27 @@ AST keywords2canonical(AST keywordparameterlist) {
 } /* end Parser class preamble */
 
 // Ambienttalk/2 programs consist of statements separated by semicolons
-program : semicolonlist EOF;
+program : globalstatementlist;
 
-// Any list of statements separated by semicolons can be seen as arguments to a begin native.
-// TODO: allow an optional final semicolon
-semicolonlist : statement (SMC! statement)* { #semicolonlist = #([AGBEGIN,"begin"], #semicolonlist); };
+// an optional terminating semicolon is allowed
+// a global statementlist must always end with EOF
+globalstatementlist!: sts:globalstatements { #globalstatementlist = #([AGBEGIN,"begin"], #sts); };
+globalstatements!: stmt:statement stmts:moreglobalstatements[#stmt] { #globalstatements = #stmts; };
+moreglobalstatements![AST stmt]: (SMC EOF) => SMC EOF { #moreglobalstatements = #stmt; }
+                               | EOF { #moreglobalstatements = #stmt; }
+                               | SMC gsts:globalstatements { #stmt.setNextSibling(#gsts);
+                         	                                   #moreglobalstatements = #stmt; }
+                               ;
+
+// an optional terminating semicolon is allowed
+// a statementlist must always end with RBC
+statementlist!: sts:statements { #statementlist = #([AGBEGIN,"begin"], #sts); };
+statements!: stmt:statement stmts:morestatements[#stmt] { #statements = #stmts; };
+morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
+                         | RBC { #morestatements = #stmt; }
+                         | SMC msts:statements { #stmt.setNextSibling(#msts);
+                         	                       #morestatements = #stmt; }
+                         ;
 
 // Statements can be either definitions assignments or ordinary expressions
 statement: ("def"! definition)
@@ -60,7 +76,7 @@ statement: ("def"! definition)
 // def <apl> { <body> } defines an immutable function.
 // def <name>[size-exp] { <init-expression> } defines and initializes a new table of a given size
 definition!: nam:variable EQL val:expression { #definition = #([AGDEFFIELD,"define-field"], nam, val); }
-           | inv:signature LBC bdy:semicolonlist RBC { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
+           | inv:signature LBC bdy:statementlist { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
            | tbl:variable LBR siz:expression RBR LBC init:expression RBC { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
            | par:parametertable EQL vls:expression { #definition = #([AGMULTIDEF,"multi-def"], par, vls); };
 
@@ -128,19 +144,27 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          | LBC! block
          | LBR! table;
 
-unary! : (operator LPR) => var:operator { #unary = #var; }
+unary! : (operator (LPR|LBR|DOT|ARW)) => var:operator { #unary = #var; }
        | opr:operator arg:invocation { #unary = #([AGAPL,"apply"], opr, #([AGTAB,"table"], arg)); };
 
 // A quotation is a quoted piece of source code:
-// `( statement )
-quotation!: LPR stmt:statement RPR { #quotation = #([AGQUO,"quote"],stmt); };
+// `{ statement }
+// or `operand
+// note that `{ x } parses x as a statement and returns `x
+// to quote a block literal, use `({ x }), which parses { x } as a subexpression
+// the rule is ambiguous as `{ x } can both be interpreted as `{ statement } or as `blockliteral
+quotation: (options { generateAmbigWarnings=false; } :
+             statementquotation
+           | invocationquotation);
+
+statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
+invocationquotation!: inv:invocation { #invocationquotation = #([AGQUO,"quote"],#inv); };
 
 // An unquotation is an unquoted or unquote-spliced piece of source code
-// #( expression )
-// #@( expression )
-// TODO: appears to introduce ambiguity for blocks when using ,(...) and ,@(...)
-unquotation!: LPR uexp:expression RPR { #unquotation = #([AGUNQ,"unquote"], uexp); }
-            | CAT LPR usexp:expression RPR { #unquotation = #([AGUQS,"unquote-splice"], usexp); };
+// #operand
+// #@operand
+unquotation!: uexp:invocation { #unquotation = #([AGUNQ,"unquote"], uexp); }
+            | CAT usexp:invocation { #unquotation = #([AGUQS,"unquote-splice"], usexp); };
 
 // Curried invocations eagerly consume all subsequent ( [ . tokens. If such tokens are
 // available a single invocation is parsed passing on the received functor (which will
@@ -197,9 +221,9 @@ asyncmessage!: apl:application { #asyncmessage = #([AGAMS,"async-message"], apl)
 subexpression!: e:expression RPR { #subexpression = #e; };
 
 // Inline syntax for nameless functions (lambdas or blocks)
-block!: PIP pars:parameterlist PIP body:semicolonlist RBC
+block!: PIP pars:parameterlist PIP body:statementlist
 		 { #block = #([AGCLO, "closure"], pars, body); }
-	  | no_args_body:semicolonlist RBC
+	  | no_args_body:statementlist
 		 { #block = #([AGCLO, "closure"], #([AGTAB,"table"], #([COM]) ), no_args_body); };
 
 // Inline syntax for table expressions

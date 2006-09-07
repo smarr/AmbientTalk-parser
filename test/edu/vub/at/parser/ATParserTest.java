@@ -46,7 +46,7 @@ public class ATParserTest extends TestCase {
 
 			CommonAST parseTree = (CommonAST)parser.getAST();
 			System.out.println(parseTree.toStringList());
-			assertEquals((expectedOutput + "null").replaceAll("\\s", ""), parseTree.toStringList().replaceAll("\\s", ""));
+			assertEquals((expectedOutput).replaceAll("\\s", ""), parseTree.toStringList().replaceAll("\\s", ""));
 		} catch(Exception e) {
 			fail("Exception: "+e); 
 		}
@@ -59,6 +59,8 @@ public class ATParserTest extends TestCase {
 	public void testStatementGrammar() {
 		testParse("a;b;c",
 				 "(begin (symbol a) (symbol b) (symbol c))");
+		testParse("a;b;c;",
+		          "(begin (symbol a) (symbol b) (symbol c))");
 		testParse("def x := 5",
 				 "(begin (define-field (symbol x) (number 5)))");
 		testParse("def f(a,b) { 5 }",
@@ -110,12 +112,25 @@ public class ATParserTest extends TestCase {
                   "(begin (table-get (apply (symbol f) (table)) (+ (symbol a) (symbol b))))");
 		testParse("a",
                    "(begin (symbol a))");
-		testParse("`(t[a])",
-                   "(begin (quote (table-get (symbol t) (symbol a))))");
-		testParse("#(t[a])",
-                   "(begin (unquote (table-get (symbol t) (symbol a))))");
-		testParse("#@(t[a])",
-                   "(begin (unquote-splice (table-get (symbol t) (symbol a))))");
+	}
+	
+	public void testQuasiquoting() {
+		testParse("`(t[a] + 1)",
+                  "(begin (quote (+ (table-get (symbol t) (symbol a)) (number 1))))");
+         testParse("#(t[a] + 1)",
+                    "(begin (unquote (+ (table-get (symbol t) (symbol a)) (number 1))))");
+         testParse("#@(t[a] + 1)",
+                   "(begin (unquote-splice (+ (table-get (symbol t) (symbol a)) (number 1))))");
+ 		testParse("`t[a] + 1",
+ 				  "(begin (+ (quote (table-get (symbol t) (symbol a))) (number 1)))");
+ 		testParse("#t[a] + 1",
+ 				  "(begin (+ (unquote (table-get (symbol t) (symbol a))) (number 1)))");
+ 		testParse("#@t[a] + 1",
+ 				  "(begin (+ (unquote-splice (table-get (symbol t) (symbol a))) (number 1)))");   
+ 		testParse("`{ def x := 5 }",
+		          "(begin (quote (define-field (symbol x) (number 5))))");
+ 		testParse("`({ def x := 5 })",
+                   "(begin (quote (closure (table) (begin (define-field (symbol x) (number 5))))))");
 	}
 	
 	/**
@@ -131,12 +146,12 @@ public class ATParserTest extends TestCase {
 	    		     "(begin (apply (symbol +) (table (number 1) (number 2))))");
 	    testParse("a.+(2)",
 	              "(begin (send (symbol a) (message (apply (symbol +) (table (number 2))))))");
-	    
-        // the following expression is very tricky!
-	    // == +(.m(1)) , i.e. + applied to a first-class message, and NOT a message send
-	    // if unary operators can be invoked, then syntax like '-1' will fail as numbers are not invocations
 	    testParse("+.m(1)",
-                  "(begin (apply (symbol +) (table (message (apply (symbol m) (table (number 1)))))))");
+                  "(begin (send (symbol +) (message (apply (symbol m) (table (number 1))))))");
+	    testParse("+.m",
+                  "(begin (select (symbol +) (symbol m)))");
+	    testParse("-1",
+                  "(begin (apply (symbol -) (table (number 1))))");
 	    testParse("-5 + a",
                   "(begin (+ (apply (symbol -) (table (number 5))) (symbol a)))");
 	}
@@ -160,7 +175,7 @@ public class ATParserTest extends TestCase {
 				 "(begin (table))");
 		testParse("{ | x, y | x + y }",
 				 "(begin (closure (table (symbol x) (symbol y)) (begin (+ (symbol x) (symbol y)))))");
-		testParse("{ a := 2; b }",
+		testParse("{ a := 2; b; }",
 				 "(begin (closure (table) (begin (var-set (symbol a) (number 2)) (symbol b))))");
 	}
 	
