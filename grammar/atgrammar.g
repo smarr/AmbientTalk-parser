@@ -144,8 +144,13 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          | LBC! block
          | LBR! table;
 
+// tree cases for 'unary' operators:
+// +.m(1) => send the message m to + (first case)
+// -t[5] => negate the invocation t[5] (second case)
+// + => third case: operator as a variable
 unary! : (operator (LPR|LBR|DOT|ARW)) => var:operator { #unary = #var; }
-       | opr:operator arg:invocation { #unary = #([AGAPL,"apply"], opr, #([AGTAB,"table"], arg)); };
+       | (operator invocation) => opr:operator arg:invocation { #unary = #([AGAPL,"apply"], opr, #([AGTAB,"table"], arg)); }
+       | op:operator { #unary = #op; };
 
 // A quotation is a quoted piece of source code:
 // `{ statement }

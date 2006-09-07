@@ -152,8 +152,16 @@ public class ATParserTest extends TestCase {
                   "(begin (select (symbol +) (symbol m)))");
 	    testParse("-1",
                   "(begin (apply (symbol -) (table (number 1))))");
+	    testParse("-t[5]",
+                  "(begin (apply (symbol -) (table (table-get (symbol t) (number 5)))))");
 	    testParse("-5 + a",
                   "(begin (+ (apply (symbol -) (table (number 5))) (symbol a)))");
+	    testParse("/",
+	              "(begin (symbol /))");
+	    testParse("/.at",
+	    		     "(begin (select (symbol /) (symbol at)))");
+	    	testParse("~.test",
+	    		     "(begin (select (symbol ~) (symbol test)))");
 	}
 	
 	/**

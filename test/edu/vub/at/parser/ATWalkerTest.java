@@ -84,7 +84,12 @@ public class ATWalkerTest extends TestCase {
 		testWalker("+(1,2)");
 		testWalker("a.+(2)");
 		testWalker("+.m(1)");
+		testWalker("-1", "-(1)");
+		testWalker("-t[5]","-(t[5])");
 		testWalker("-5 + a", "-(5).+(a)");
+		testWalker("/");
+		testWalker("/.at");
+	    testWalker("~.test");
 	}
 	
 	public void testLiteralGrammar() {
