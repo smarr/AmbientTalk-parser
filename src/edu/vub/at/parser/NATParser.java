@@ -31,6 +31,8 @@ import java.io.ByteArrayInputStream;
 
 import antlr.ANTLRException;
 import antlr.CommonAST;
+import antlr.RecognitionException;
+
 import edu.vub.at.exceptions.XParseError;
 import edu.vub.at.exceptions.XTypeMismatch;
 import edu.vub.at.objects.ATAbstractGrammar;
@@ -49,22 +51,28 @@ public class NATParser extends NATNil {
 	public static final NATParser _INSTANCE_ = new NATParser();
 	
 	public ATAbstractGrammar base_parse(ATText source) throws XTypeMismatch, XParseError {
-		return parse(source.asNativeText().javaValue);
+		return parse(null, source.asNativeText().javaValue);
 	}
 	
-	private ATAbstractGrammar parse(String source) throws XParseError {
+	public static ATAbstractGrammar parse(String filename, String source) throws XParseError {
 		try {
 			LexerImpl lexer = new LexerImpl(new ByteArrayInputStream(source.getBytes()));
 			ParserImpl parser = new ParserImpl(lexer);
+			if (filename != null) {
+				parser.setFilename(filename);
+			}
+			
 			// Parse the input expression
 			parser.program();
 			CommonAST t = (CommonAST)parser.getAST();
 			
 			// Traverse the tree created by the parser
 			TreeWalkerImpl walker = new TreeWalkerImpl();
-			return walker.program(t);		
+			return walker.program(t);	
+		} catch(RecognitionException e) {
+			throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);
 		} catch(ANTLRException e) {
-			throw new XParseError("Illegal input : \n" + source, e);
+			throw new XParseError(e.getMessage(), e);
 		}
 	}
 }
