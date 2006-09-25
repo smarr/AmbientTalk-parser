@@ -14,6 +14,7 @@ public class AllParserTests {
 		//$JUnit-BEGIN$
 		suite.addTestSuite(ATWalkerTest.class);
 		suite.addTestSuite(ATParserTest.class);
+		suite.addTestSuite(ParseErrorTest.class);
 		//$JUnit-END$
 		return suite;
 	}

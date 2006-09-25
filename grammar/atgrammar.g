@@ -5,6 +5,7 @@ class ParserImpl extends Parser;
 options {
   k = 2;
   buildAST = true;
+  defaultErrorHandler = false;
 }
 
 { /* begin Parser class preamble */
