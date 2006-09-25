@@ -38,6 +38,7 @@ import edu.vub.at.exceptions.XTypeMismatch;
 import edu.vub.at.objects.ATAbstractGrammar;
 import edu.vub.at.objects.ATText;
 import edu.vub.at.objects.natives.NATNil;
+import edu.vub.at.objects.natives.NATText;
 
 /**
  * The class NATParser is a front-end (or Facade) to hide the details of the parser from
@@ -74,5 +75,9 @@ public class NATParser extends NATNil {
 		} catch(ANTLRException e) {
 			throw new XParseError(e.getMessage(), e);
 		}
+	}
+	
+	public NATText meta_print() throws XTypeMismatch {
+		return NATText.atValue("<native object: parser>");
 	}
 }
