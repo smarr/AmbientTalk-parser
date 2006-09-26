@@ -46,6 +46,7 @@ AST keywords2canonical(AST keywordparameterlist) {
 // Ambienttalk/2 programs consist of statements separated by semicolons
 program : globalstatementlist;
 
+// TODO: refactor duplicated code by using an extra token parameter to abstract EOF and RBC tokens
 // an optional terminating semicolon is allowed
 // a global statementlist must always end with EOF
 globalstatementlist!: sts:globalstatements { #globalstatementlist = #([AGBEGIN,"begin"], #sts); };
@@ -141,6 +142,7 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          | HSH! unquotation
          | DOT! message
          | ARW! asyncmessage
+         | USD! universalmessage
          | LPR! subexpression
          | LBC! block
          | LBR! table;
@@ -149,7 +151,7 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
 // +.m(1) => send the message m to + (first case)
 // -t[5] => negate the invocation t[5] (second case)
 // + => third case: operator as a variable
-unary! : (operator (LPR|LBR|DOT|ARW)) => var:operator { #unary = #var; }
+unary! : (operator (LPR|LBR|DOT|ARW|USD)) => var:operator { #unary = #var; }
        | (operator invocation) => opr:operator arg:invocation { #unary = #([AGAPL,"apply"], opr, #([AGTAB,"table"], arg)); }
        | op:operator { #unary = #op; };
 
@@ -178,7 +180,7 @@ unquotation!: uexp:invocation { #unquotation = #([AGUNQ,"unquote"], uexp); }
 // to be curried even further. When no appropriate tokens are left, the passed functor 
 // is returned.
 curried_invocation![AST functor]:
-      (LPR|LBR|DOT|ARW) => i:invoke_expression[functor] c:curried_invocation[#i] { #curried_invocation = #c; }
+      (LPR|LBR|DOT|ARW|USD) => i:invoke_expression[functor] c:curried_invocation[#i] { #curried_invocation = #c; }
 	| {#curried_invocation = #functor; };
 
 // Invocation expressions are a single curried expression whether to apply, tabulate or
@@ -188,7 +190,8 @@ invoke_expression[AST functor]:
 	|  tabulation[functor]
 	|! (DOT variable LPR | DOT KEY) => DOT apl:application { #invoke_expression = #([AGSND,"send"], functor, #([AGMSG,"message"], apl)); }
 	|  selection[functor]
-	|! (ARW variable LPR | ARW KEY) => ARW snd:application { #invoke_expression = #([AGSND,"send"], functor, #([AGAMS,"async-message"], snd)); };
+	|! (ARW variable LPR | ARW KEY) => ARW snd:application { #invoke_expression = #([AGSND,"send"], functor, #([AGAMS,"async-message"], snd)); }
+	|! (USD expression) => USD exp:expression { #invoke_expression = #([AGSND,"send"], functor, #([AGUSD,"univ-message"], exp)); };
 
 tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table-get"], functor, idx); };
 selection![AST functor]: DOT var:variable { #selection = #([AGSEL,"select"], functor, var); };
@@ -222,6 +225,9 @@ message!: apl:application { #message = #([AGMSG,"message"], apl); };
 
 // First-class aynchronous message creation syntax: <-m() or <-key:val
 asyncmessage!: apl:application { #asyncmessage = #([AGAMS,"async-message"], apl); };
+
+// First-class universal message: <+ expression
+universalmessage!: exp:expression { #universalmessage = #([AGUSD,"univ-message"], exp); };
 
 // This rule unwraps an expression of its delimiter parentheses.
 subexpression!: e:expression RPR { #subexpression = #e; };
@@ -304,6 +310,7 @@ protected AGAPL     : "apply";         // AGApplication(SYM sel, TAB arg)
 protected AGSEL     : "select";        // AGSelection(EXP rcv, SYM sel)
 protected AGMSG     : "message";       // AGMethodInvocation(SYM sel, TAB arg)
 protected AGAMS     : "async-message"; // AGAsyncMessage(SYM sel, TAB arg)
+protected AGUSD     : "univ-message";  // ATExpression(exp)
 protected AGTBL     : "table-get";     // AGTabulation(EXP tbl, EXP idx)
 protected AGSYM     : "symbol";        // AGSymbol(TXT nam)
 protected AGSLF     : "self";          // AGSelf
@@ -414,15 +421,17 @@ SMC options { paraphrase = "a semicolon"; }: ';';
 
 EQL options { paraphrase = "an assignment"; }: ":=";
 DOT options { paraphrase = "a selection"; }: '.';
-protected ARW: "<-";
+protected ARW: "<-"; // asynchronous send operator
+protected USD: "<+"; // universal send operator
 PIP options { paraphrase = "a block argument list"; }: '|';
 
 BQU options { paraphrase = "a quotation"; }: '`';
 HSH options { paraphrase = "an unquotation"; }: '#';
 CAT options { paraphrase = "a splice"; }: '@';
 
-CMP_OR_ARW options { paraphrase = "a comparator or asynchronous send"; }
+CMP_OR_ARW options { paraphrase = "a comparator, asynchronous or universal send"; }
           : ( "<-" ) => ARW  { $setType(ARW); }
+          | ( "<+" ) => USD  { $setType(USD); }
           |   CMP            { $setType(CMP); }
           ;
 
@@ -546,10 +555,9 @@ assignment returns [ATAssignment ass]
 
 expression returns [ATExpression exp]
   { exp = null;
-  	ATExpression rcv, idx, qexp;
+  	ATExpression rcv, idx, qexp, msg;
   	ATStatement qstmt;
   	ATSymbol sel;
-  	ATMessageCreation msg;
   	NATTable arg; }
           : #(AGSND rcv=expression msg=message) { exp = new AGMessageSend(rcv,msg); }
           | #(AGAPL rcv=expression arg=table) { exp = new AGApplication(rcv, arg); }
@@ -565,11 +573,13 @@ expression returns [ATExpression exp]
           | exp=literal
           ;
 
-message returns [ATMessageCreation msg]
+message returns [ATExpression msg]
   { msg = null;
+  	ATExpression exp;
   	ATSymbol sel; NATTable arg; }
   	      : #(AGMSG #(AGAPL sel=symbol arg=table)) { msg = new AGMethodInvocationCreation(sel,arg); }
   	      | #(AGAMS #(AGAPL sel=symbol arg=table)) { msg = new AGAsyncMessageCreation(sel,arg); }
+  	      | #(AGUSD exp=expression) { msg=exp; }
   	      ;
           
 binop returns [ATMessageSend snd]

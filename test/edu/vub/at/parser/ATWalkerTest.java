@@ -65,6 +65,8 @@ public class ATWalkerTest extends TestCase {
 		testWalker("t[a]");
 		testWalker("f()[a+b]", "f()[a.+(b)]");
 		testWalker("a");
+	    testWalker("o<+.m()","o.m()");
+	    testWalker("o<+foo()","o<+foo()");
 	}
 	
 	public void testQuasiquoting() {

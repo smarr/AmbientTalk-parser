@@ -221,6 +221,12 @@ public class ATParserTest extends TestCase {
 	    testParse(
 	    		"object.keyworded: message send: test",
 	    		" ( begin ( send (symbol object) (message ( apply ( symbol keyworded:send:) (table (symbol message) (symbol test) ) ) ) ) )");
+	    testParse(
+	    		"o<+.m()",
+	    		"(begin (send (symbol o) (univ-message (message (apply (symbol m) (table))))))");
+	    testParse(
+	    		"o<+foo()",
+	    		"(begin (send (symbol o) (univ-message (apply (symbol foo) (table)))))");
 	}
 	
 	/**
