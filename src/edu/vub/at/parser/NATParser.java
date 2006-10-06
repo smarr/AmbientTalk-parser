@@ -27,18 +27,18 @@
  */
 package edu.vub.at.parser;
 
+import edu.vub.at.exceptions.NATException;
+import edu.vub.at.exceptions.XParseError;
+import edu.vub.at.objects.ATAbstractGrammar;
+import edu.vub.at.objects.ATText;
+import edu.vub.at.objects.natives.NATNil;
+import edu.vub.at.objects.natives.NATText;
+
 import java.io.ByteArrayInputStream;
 
 import antlr.ANTLRException;
 import antlr.CommonAST;
 import antlr.RecognitionException;
-
-import edu.vub.at.exceptions.XParseError;
-import edu.vub.at.exceptions.XTypeMismatch;
-import edu.vub.at.objects.ATAbstractGrammar;
-import edu.vub.at.objects.ATText;
-import edu.vub.at.objects.natives.NATNil;
-import edu.vub.at.objects.natives.NATText;
 
 /**
  * The class NATParser is a front-end (or Facade) to hide the details of the parser from
@@ -51,7 +51,7 @@ public class NATParser extends NATNil {
 
 	public static final NATParser _INSTANCE_ = new NATParser();
 	
-	public ATAbstractGrammar base_parse(ATText source) throws XTypeMismatch, XParseError {
+	public ATAbstractGrammar base_parse(ATText source) throws NATException {
 		return parse(null, source.asNativeText().javaValue);
 	}
 	
@@ -77,7 +77,7 @@ public class NATParser extends NATNil {
 		}
 	}
 	
-	public NATText meta_print() throws XTypeMismatch {
+	public NATText meta_print() throws NATException {
 		return NATText.atValue("<native object: parser>");
 	}
 }
