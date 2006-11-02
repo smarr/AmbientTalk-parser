@@ -27,6 +27,7 @@
  */
 package edu.vub.at.parser;
 
+import edu.vub.at.exceptions.InterpreterException;
 import edu.vub.at.exceptions.NATException;
 import edu.vub.at.exceptions.XParseError;
 import edu.vub.at.objects.ATAbstractGrammar;
@@ -51,7 +52,7 @@ public class NATParser extends NATNil {
 
 	public static final NATParser _INSTANCE_ = new NATParser();
 	
-	public ATAbstractGrammar base_parse(ATText source) throws NATException {
+	public ATAbstractGrammar base_parse(ATText source) throws InterpreterException {
 		return parse(null, source.asNativeText().javaValue);
 	}
 	
@@ -77,7 +78,7 @@ public class NATParser extends NATNil {
 		}
 	}
 	
-	public NATText meta_print() throws NATException {
+	public NATText meta_print() throws InterpreterException {
 		return NATText.atValue("<native object: parser>");
 	}
 }
