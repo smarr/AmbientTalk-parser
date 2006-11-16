@@ -41,8 +41,11 @@ public class ATWalkerTest extends TestCase {
 	public void testStatementGrammar() {
 		testWalker("a; b; c");
 		testWalker("def x := 5");
+		testWalker("def o.x := 5");
 		testWalker("def f(a,b) { 5 }");
 		testWalker("def foo: x bar: y { 5 }", "def foo:bar:(x,y) { 5 }");
+		testWalker("def o.f(a,b) { 5 }");
+		testWalker("def o.foo: x bar: y { 5 }", "def o.foo:bar:(x,y) { 5 }");
 		testWalker("def t[5] { a }");
 		testWalker("def [x, y] := [y, x]");
 		testWalker("x := 7");

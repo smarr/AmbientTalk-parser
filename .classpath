@@ -4,8 +4,8 @@
 	<classpathentry kind="src" path="grammar"/>
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/AmbientTalk-2"/>
-	<classpathentry kind="lib" path="lib/antlr.jar"/>
-	<classpathentry kind="lib" path="lib/junit.jar"/>
+	<classpathentry sourcepath="ECLIPSE_HOME/plugins/org.eclipse.jdt.source_3.1.1/src/org.junit_3.8.1/junitsrc.zip" kind="var" path="JUNIT_HOME/junit.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/AT2 Interpreter"/>
+	<classpathentry sourcepath="ANTLR_HOME/antlrsrc.zip" kind="var" path="ANTLR_HOME/antlr.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

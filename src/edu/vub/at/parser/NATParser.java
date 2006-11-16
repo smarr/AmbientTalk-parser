@@ -28,7 +28,6 @@
 package edu.vub.at.parser;
 
 import edu.vub.at.exceptions.InterpreterException;
-import edu.vub.at.exceptions.NATException;
 import edu.vub.at.exceptions.XParseError;
 import edu.vub.at.objects.ATAbstractGrammar;
 import edu.vub.at.objects.ATText;

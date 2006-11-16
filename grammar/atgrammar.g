@@ -80,7 +80,9 @@ statement: ("def"! definition)
 definition!: nam:variable EQL val:expression { #definition = #([AGDEFFIELD,"define-field"], nam, val); }
            | inv:signature LBC bdy:statementlist { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
            | tbl:variable LBR siz:expression RBR LBC init:expression RBC { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
-           | par:parametertable EQL vls:expression { #definition = #([AGMULTIDEF,"multi-def"], par, vls); };
+           | par:parametertable EQL vls:expression { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
+           | (variable DOT signature LBC) => rcv:variable DOT mth:signature LBC imp:statementlist { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
+           | rcvr:variable DOT name:variable EQL valu:expression { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); };
 
 // A function signature can either be a canonical parameter list of the form <fun(a,b,c)>
 // or a keyworded list of the form <foo: a bar: b>
@@ -298,6 +300,8 @@ protected AGBEGIN   : "begin";         // AGBegin(TAB stmts)
 protected AGDEFFIELD: "define-field";  // AGDefField(SYM nam, EXP val)
 protected AGDEFFUN  : "define-function";// AGDefFunction(SYM sel, TAB arg, BGN bdy)
 protected AGDEFTABLE: "define-table";  // AGDefTable(SYM tbl, EXP siz, EXP ini)
+protected AGDEFEXTMTH: "define-external-method";// AGDefExternalMethod(SYM rcv, SYM sel, TAB arg, BGN bdy)
+protected AGDEFEXTFLD: "define-external-field"; // AGDefExternalField(SYM rcv, SYM nam, EXP val)
 protected AGMULTIDEF: "multi-def";     // AGMultiDefinition(TAB par, EXP val)
 // Assignments
 protected AGASSVAR  : "var-set";       // AGAssignField(SYM nam, EXP val)
@@ -532,12 +536,14 @@ statement returns [ATStatement stmt] { stmt = null; }
 
 definition returns [ATDefinition def]
   { def = null;
-  	ATSymbol nam;
+  	ATSymbol nam, rcv;
   	NATTable pars;
   	ATExpression idx, val;
   	ATBegin bdy; }
           : #(AGDEFFIELD nam=symbol val=expression) { def = new AGDefField(nam, val); }
           | #(AGDEFFUN #(AGAPL nam=symbol pars=table) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); }
+          | #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=table) bdy=begin) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
+          | #(AGDEFEXTFLD rcv=symbol nam=symbol val=expression) { def = new AGDefExternalField(rcv, nam, val); }
           | #(AGDEFTABLE nam=symbol idx=expression val=expression) { def = new AGDefTable(nam,idx,val); }
           | #(AGMULTIDEF pars=table val=expression) { def = new AGMultiDefinition(pars,val); }
           ;

@@ -63,10 +63,16 @@ public class ATParserTest extends TestCase {
 		          "(begin (symbol a) (symbol b) (symbol c))");
 		testParse("def x := 5",
 				 "(begin (define-field (symbol x) (number 5)))");
+		testParse("def o.x := 5",
+		          "(begin (define-external-field (symbol o) (symbol x) (number 5)))");
 		testParse("def f(a,b) { 5 }",
 				 "(begin (define-function (apply (symbol f) (table (symbol a) (symbol b))) (begin (number 5))))");
 		testParse("def foo: x bar: y { 5 }",
 				 "(begin (define-function (apply (symbol foo:bar:) (table (symbol x) (symbol y))) (begin (number 5))))");
+		testParse("def o.f(a,b) { 5 }",
+		          "(begin (define-external-method (symbol o) (apply (symbol f) (table (symbol a) (symbol b))) (begin (number 5))))");
+		testParse("def o.foo: x bar: y { 5 }",
+		          "(begin (define-external-method (symbol o) (apply (symbol foo:bar:) (table (symbol x) (symbol y))) (begin (number 5))))");		
 		testParse("def t[5] { a }",
 				 "(begin (define-table (symbol t) (number 5) (symbol a)))");
 		testParse("def [x, y] := t",
