@@ -519,7 +519,7 @@ class TreeWalkerImpl extends TreeParser;
   public AGMessageSend operatorToSend(AST opr, ATExpression receiver, ATExpression operand) {
 	  return new AGMessageSend(receiver,
 	                           new AGMethodInvocationCreation(AGSymbol.alloc(NATText.atValue(opr.getText())),
-  	                                                          new NATTable(new ATObject[] { operand })));
+  	                                                          NATTable.atValue(new ATObject[] { operand })));
   }
 
 } // end TreeWalker preamble
@@ -623,7 +623,7 @@ table returns [NATTable tab]
   	ATExpression expr;
   	LinkedList list = new LinkedList(); }
           : #(AGTAB (expr=expression { list.add(expr); })* )
-              { tab = (list.isEmpty()) ? NATTable.EMPTY : new NATTable((ATObject[]) list.toArray(new ATObject[list.size()])); }
+              { tab = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); }
           ;
           
 begin returns [AGBegin bgn]
@@ -631,5 +631,5 @@ begin returns [AGBegin bgn]
   	ATStatement stmt;
   	LinkedList list = new LinkedList(); }
           : #(AGBEGIN (stmt=statement { list.add(stmt); })+ )
-              { bgn = new AGBegin(new NATTable((ATObject[]) list.toArray(new ATObject[list.size()]))); }
+              { bgn = new AGBegin(NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); }
           ;
