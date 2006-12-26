@@ -259,8 +259,9 @@ argument:! CAT exp:expression { #argument = #([AGSPL,"splice"], exp); }
 parameterlist: parameter (COM! parameter)* { #parameterlist = #([AGTAB, "table"], #parameterlist); }
             |! /* empty */ { #parameterlist = #([AGTAB,"table"], #([COM])); };
 
-parameter: variable_or_quotation
-         |! CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
+parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:expression { #parameter = #([AGASSVAR, "var-set"], var, exp); }
+          | vq:variable_or_quotation { #parameter = #vq; }
+          | CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
 
 variable_or_quotation: variable
                      | HSH! unquotation;
@@ -541,11 +542,11 @@ definition returns [ATDefinition def]
   	ATExpression idx, val;
   	ATBegin bdy; }
           : #(AGDEFFIELD nam=symbol val=expression) { def = new AGDefField(nam, val); }
-          | #(AGDEFFUN #(AGAPL nam=symbol pars=table) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); }
-          | #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=table) bdy=begin) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
+          | #(AGDEFFUN #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); System.err.println("!!:"+pars); }
+          | #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
           | #(AGDEFEXTFLD rcv=symbol nam=symbol val=expression) { def = new AGDefExternalField(rcv, nam, val); }
           | #(AGDEFTABLE nam=symbol idx=expression val=expression) { def = new AGDefTable(nam,idx,val); }
-          | #(AGMULTIDEF pars=table val=expression) { def = new AGMultiDefinition(pars,val); }
+          | #(AGMULTIDEF pars=params val=expression) { def = new AGMultiDefinition(pars,val); }
           ;
 
 assignment returns [ATAssignment ass]
@@ -556,7 +557,7 @@ assignment returns [ATAssignment ass]
           : #(AGASSVAR nam=symbol val=expression) { ass = new AGAssignVariable(nam, val); }
           | #(AGASSTAB #(AGTBL rcv=expression idx=expression) val=expression) { ass = new AGAssignTable(rcv, idx, val); }
           | #(AGASSFLD #(AGSEL rcv=expression nam=symbol) val=expression) { ass = new AGAssignField(rcv, nam, val); }
-          | #(AGMULTIASS par=table val=expression) { ass = new AGMultiAssignment(par, val); }
+          | #(AGMULTIASS par=params val=expression) { ass = new AGMultiAssignment(par, val); }
           ;
 
 expression returns [ATExpression exp]
@@ -605,7 +606,7 @@ literal returns[ATExpression lit]
           | #(AGFRC frc:FRC) { lit = NATFraction.atValue(Double.parseDouble(frc.getText())); }
           | #(AGTXT txt:TXT) { String text = txt.getText(); lit = NATText.atValue(text.substring(1, text.length() - 1)); }
           | lit=table
-          | #(AGCLO par=table body=begin) { lit = new AGClosureLiteral(par, body); }
+          | #(AGCLO par=params body=begin) { lit = new AGClosureLiteral(par, body); }
           ;
           
 symbol returns [AGSymbol sym] { sym = null; }
@@ -617,6 +618,16 @@ symbol returns [AGSymbol sym] { sym = null; }
           | AGSLF { sym = AGSelf._INSTANCE_; }
           | AGSUP { sym = AGSuper._INSTANCE_; }
           ;
+
+param returns [NATAbstractGrammar ag]
+  { ag = null;
+  	AGSymbol nam; ATExpression exp; }
+          : #(AGASSVAR nam=symbol exp=expression) { ag = new AGAssignVariable(nam, exp); }
+		  | ag=symbol
+		  | #(AGUNQ exp=expression) { ag = new AGUnquote(exp); }
+          | #(AGUQS exp=expression) { ag = new AGUnquoteSplice(exp); }
+          | #(AGSPL exp=expression) { ag = new AGSplice(exp); }
+		  ;
 
 table returns [NATTable tab]
   { tab = null;
@@ -632,4 +643,12 @@ begin returns [AGBegin bgn]
   	LinkedList list = new LinkedList(); }
           : #(AGBEGIN (stmt=statement { list.add(stmt); })+ )
               { bgn = new AGBegin(NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); }
+          ;
+          
+params returns [NATTable par]
+  { par = null;
+  	NATAbstractGrammar formal;
+  	LinkedList list = new LinkedList(); }
+          : #(AGTAB (formal=param { list.add(formal); })* )
+              { par = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); }
           ;

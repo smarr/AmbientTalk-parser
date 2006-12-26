@@ -265,6 +265,19 @@ public class ATParserTest extends TestCase {
 	    		"if: c1 then: ( if: c2 then: a ) else: b", 
 	    		" ( begin ( apply (symbol if:then:else:) (table (symbol c1) ( apply (symbol if:then:) (table (symbol c2) (symbol a) ) ) (symbol b) ) ) )");
 	}
+	
+	/**
+	 * Test the syntax of optional arguments.
+	 * @covers keywordlist application
+	 */
+	public void testOptionalArgs() {
+	    testParse("def foo(x := 5) { 1 }",
+	    		"(begin (define-function (apply (symbol foo) (table (var-set (symbol x) (number 5)))) (begin (number 1))))");
+	    testParse("def foo(x, y := 1+2, @z) { 1 }",
+		          "(begin (define-function (apply (symbol foo) (table (symbol x) (var-set (symbol y) (+ (number 1) (number 2))) (splice (symbol z)))) (begin (number 1))))");
+	    testParse("def foo(x := #5) { 1 }",
+		          "(begin (define-function (apply (symbol foo) (table (var-set (symbol x) (unquote (number 5))))) (begin (number 1))))");
+	}
 
 	/**
 	 * Tests the definition of a prototype point object.

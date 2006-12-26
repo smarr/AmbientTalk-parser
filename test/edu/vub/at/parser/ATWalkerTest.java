@@ -122,5 +122,11 @@ public class ATWalkerTest extends TestCase {
 	    testWalker("closures.at(closures.length)()");
 	    testWalker("closures[closures.length]()");
 	}
+	
+	public void testOptionalArgs() {
+		testWalker("def foo(x := 5) { 1 }");
+		testWalker("def foo(x, y := 1+2, @z) { 1 }", "def foo(x, y := 1.+(2), @z) { 1 }");
+	    testWalker("def foo(x := #5) { 1 }", "def foo(x := #(5)) { 1 }");
+	}
 
 }
