@@ -542,7 +542,7 @@ definition returns [ATDefinition def]
   	ATExpression idx, val;
   	ATBegin bdy; }
           : #(AGDEFFIELD nam=symbol val=expression) { def = new AGDefField(nam, val); }
-          | #(AGDEFFUN #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); System.err.println("!!:"+pars); }
+          | #(AGDEFFUN #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); }
           | #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
           | #(AGDEFEXTFLD rcv=symbol nam=symbol val=expression) { def = new AGDefExternalField(rcv, nam, val); }
           | #(AGDEFTABLE nam=symbol idx=expression val=expression) { def = new AGDefTable(nam,idx,val); }
