@@ -1,5 +1,7 @@
 package edu.vub.at.parser;
 
+import edu.vub.at.exceptions.InterpreterException;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
@@ -29,6 +31,8 @@ public class ParseErrorTest extends TestCase {
 			assertEquals(errmsg, e.getMessage());
 		} catch (TokenStreamException e) {
 			assertEquals(errmsg, e.getMessage());
+		} catch (InterpreterException e) {
+			assertEquals(errmsg, e.getMessage());
 		}
     }
 	
@@ -37,6 +41,7 @@ public class ParseErrorTest extends TestCase {
 		checkParseError("def 1 := 5", "unexpected token: 1");
 		checkParseError("5 := 2", "unexpected token: 5");
 		checkParseError("f() g()", "unexpected token: g");
+		checkParseError("[x := 1,a] := [1,2]", "Illegal parameter list for multi-assignment: optional parameters followed by mandatory parameter a");
 	}
 
 }

@@ -512,6 +512,7 @@ protected ESC
   import edu.vub.at.objects.natives.*;
   import edu.vub.at.objects.grammar.*;
   import edu.vub.at.objects.natives.grammar.*;
+  import edu.vub.at.exceptions.InterpreterException;
   import java.util.LinkedList; }
 class TreeWalkerImpl extends TreeParser;
 { // begin TreeWalker preamble
@@ -525,17 +526,17 @@ class TreeWalkerImpl extends TreeParser;
 
 } // end TreeWalker preamble
 
-program returns [NATAbstractGrammar ag] { ag = null; }
+program returns [NATAbstractGrammar ag] throws InterpreterException { ag = null; }
           : ag=begin
           ;
 
-statement returns [ATStatement stmt] { stmt = null; }
+statement returns [ATStatement stmt] throws InterpreterException { stmt = null; }
           : stmt=definition
           | stmt=assignment
           | stmt=expression
           ;
 
-definition returns [ATDefinition def]
+definition returns [ATDefinition def] throws InterpreterException
   { def = null;
   	ATSymbol nam, rcv;
   	NATTable pars;
@@ -549,7 +550,7 @@ definition returns [ATDefinition def]
           | #(AGMULTIDEF pars=params val=expression) { def = new AGMultiDefinition(pars,val); }
           ;
 
-assignment returns [ATAssignment ass]
+assignment returns [ATAssignment ass] throws InterpreterException
   { ass = null;
     ATSymbol nam;
     ATExpression rcv, val, idx;
@@ -560,7 +561,7 @@ assignment returns [ATAssignment ass]
           | #(AGMULTIASS par=params val=expression) { ass = new AGMultiAssignment(par, val); }
           ;
 
-expression returns [ATExpression exp]
+expression returns [ATExpression exp] throws InterpreterException
   { exp = null;
   	ATExpression rcv, idx, qexp, msg;
   	ATStatement qstmt;
@@ -580,7 +581,7 @@ expression returns [ATExpression exp]
           | exp=literal
           ;
 
-message returns [ATExpression msg]
+message returns [ATExpression msg] throws InterpreterException
   { msg = null;
   	ATExpression exp;
   	ATSymbol sel; NATTable arg; }
@@ -589,7 +590,7 @@ message returns [ATExpression msg]
   	      | #(AGUSD exp=expression) { msg=exp; }
   	      ;
           
-binop returns [ATMessageSend snd]
+binop returns [ATMessageSend snd] throws InterpreterException
   { snd = null;
     ATExpression exp1, exp2; }
           : #(cmp:CMP exp1=expression exp2=expression) { snd = operatorToSend(cmp, exp1, exp2); }
@@ -598,7 +599,7 @@ binop returns [ATMessageSend snd]
           | #(pow:POW exp1=expression exp2=expression) { snd = operatorToSend(pow, exp1, exp2); }
           ;
           
-literal returns[ATExpression lit]
+literal returns[ATExpression lit] throws InterpreterException
   { lit = null;
   	NATTable par;
   	ATBegin body; }
@@ -609,7 +610,7 @@ literal returns[ATExpression lit]
           | #(AGCLO par=params body=begin) { lit = new AGClosureLiteral(par, body); }
           ;
           
-symbol returns [AGSymbol sym] { sym = null; }
+symbol returns [AGSymbol sym] throws InterpreterException { sym = null; }
           : #(AGSYM txt:NAM) { sym = AGSymbol.alloc(NATText.atValue(txt.getText())); }
           | #(AGCMP cmp:CMP) { sym = AGSymbol.alloc(NATText.atValue(cmp.getText())); }
           | #(AGADD add:ADD) { sym = AGSymbol.alloc(NATText.atValue(add.getText())); }
@@ -619,7 +620,7 @@ symbol returns [AGSymbol sym] { sym = null; }
           | AGSUP { sym = AGSuper._INSTANCE_; }
           ;
 
-param returns [NATAbstractGrammar ag]
+param returns [NATAbstractGrammar ag] throws InterpreterException
   { ag = null;
   	AGSymbol nam; ATExpression exp; }
           : #(AGASSVAR nam=symbol exp=expression) { ag = new AGAssignVariable(nam, exp); }
@@ -629,7 +630,7 @@ param returns [NATAbstractGrammar ag]
           | #(AGSPL exp=expression) { ag = new AGSplice(exp); }
 		  ;
 
-table returns [NATTable tab]
+table returns [NATTable tab] throws InterpreterException
   { tab = null;
   	ATExpression expr;
   	LinkedList list = new LinkedList(); }
@@ -637,7 +638,7 @@ table returns [NATTable tab]
               { tab = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); }
           ;
           
-begin returns [AGBegin bgn]
+begin returns [AGBegin bgn] throws InterpreterException
   { bgn = null;
   	ATStatement stmt;
   	LinkedList list = new LinkedList(); }
@@ -645,7 +646,7 @@ begin returns [AGBegin bgn]
               { bgn = new AGBegin(NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); }
           ;
           
-params returns [NATTable par]
+params returns [NATTable par] throws InterpreterException
   { par = null;
   	NATAbstractGrammar formal;
   	LinkedList list = new LinkedList(); }

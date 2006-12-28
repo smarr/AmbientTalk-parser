@@ -55,7 +55,7 @@ public class NATParser extends NATNil {
 		return parse(null, source.asNativeText().javaValue);
 	}
 	
-	public static ATAbstractGrammar parse(String filename, String source) throws XParseError {
+	public static ATAbstractGrammar parse(String filename, String source) throws InterpreterException {
 		try {
 			LexerImpl lexer = new LexerImpl(new ByteArrayInputStream(source.getBytes()));
 			ParserImpl parser = new ParserImpl(lexer);

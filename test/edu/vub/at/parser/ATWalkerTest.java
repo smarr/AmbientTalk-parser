@@ -52,6 +52,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("x[5] := 7");
 		testWalker("o.m := x");
 		testWalker("[x, y] := [y, x]");
+		testWalker("[x, y := 1] := a");
 	}
 	
 	public void testExpressionGrammar() {

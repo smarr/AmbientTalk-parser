@@ -1,5 +1,6 @@
 package edu.vub.at.parser;
 
+import edu.vub.at.exceptions.InterpreterException;
 import edu.vub.at.exceptions.XParseError;
 import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
 import edu.vub.at.parser.LexerImpl;
@@ -20,7 +21,7 @@ public class ATParserTest extends TestCase {
 		junit.swingui.TestRunner.run(ATParserTest.class);
 	}
 
-	public static NATAbstractGrammar parseProgram(String parserInput) throws XParseError {
+	public static NATAbstractGrammar parseProgram(String parserInput) throws InterpreterException {
 			try {
 				InputStream input = new ByteArrayInputStream(parserInput.getBytes());
 				LexerImpl lexer = new LexerImpl(input);
@@ -85,6 +86,8 @@ public class ATParserTest extends TestCase {
                    "(begin (field-set (select (symbol o) (symbol m)) (number 1)))");
 		testParse("[x, y] := [ y, x]",
                   "(begin (multi-set (table (symbol x) (symbol y)) (table (symbol y) (symbol x))))");
+		testParse("[x, y := 1] := a",
+                  "(begin (multi-set (table (symbol x) (var-set (symbol y) (number 1))) (symbol a)))");
 	}
 	
 	/**
