@@ -30,8 +30,9 @@ package edu.vub.at.parser;
 import edu.vub.at.exceptions.InterpreterException;
 import edu.vub.at.exceptions.XParseError;
 import edu.vub.at.objects.ATAbstractGrammar;
+import edu.vub.at.objects.ATObject;
 import edu.vub.at.objects.ATText;
-import edu.vub.at.objects.natives.NATNil;
+import edu.vub.at.objects.natives.NATByCopy;
 import edu.vub.at.objects.natives.NATText;
 
 import java.io.ByteArrayInputStream;
@@ -47,7 +48,7 @@ import antlr.RecognitionException;
  *
  * @author smostinc
  */
-public class NATParser extends NATNil {
+public class NATParser extends NATByCopy {
 
 	public static final NATParser _INSTANCE_ = new NATParser();
 	
@@ -79,5 +80,12 @@ public class NATParser extends NATNil {
 	
 	public NATText meta_print() throws InterpreterException {
 		return NATText.atValue("<native object: parser>");
+	}
+	
+	/**
+	 * After deserialization, ensure that the parser remains unique.
+	 */
+	public ATObject meta_resolve() throws InterpreterException {
+		return NATParser._INSTANCE_;
 	}
 }
