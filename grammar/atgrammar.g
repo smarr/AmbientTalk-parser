@@ -79,7 +79,7 @@ statement: ("def"! definition)
 // def <name>[size-exp] { <init-expression> } defines and initializes a new table of a given size
 definition!: nam:variable EQL val:expression { #definition = #([AGDEFFIELD,"define-field"], nam, val); }
            | inv:signature LBC bdy:statementlist { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
-           | tbl:variable LBR siz:expression RBR LBC init:expression RBC { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
+           | tbl:variable LBR siz:expression RBR LBC init:statementlist { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
            | par:parametertable EQL vls:expression { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
            | (variable DOT signature LBC) => rcv:variable DOT mth:signature LBC imp:statementlist { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
            | rcvr:variable DOT name:variable EQL valu:expression { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); };
@@ -546,7 +546,7 @@ definition returns [ATDefinition def] throws InterpreterException
           | #(AGDEFFUN #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); }
           | #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
           | #(AGDEFEXTFLD rcv=symbol nam=symbol val=expression) { def = new AGDefExternalField(rcv, nam, val); }
-          | #(AGDEFTABLE nam=symbol idx=expression val=expression) { def = new AGDefTable(nam,idx,val); }
+          | #(AGDEFTABLE nam=symbol idx=expression bdy=begin) { def = new AGDefTable(nam,idx,bdy); }
           | #(AGMULTIDEF pars=params val=expression) { def = new AGMultiDefinition(pars,val); }
           ;
 

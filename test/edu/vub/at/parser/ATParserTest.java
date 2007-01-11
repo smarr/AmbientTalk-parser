@@ -75,7 +75,9 @@ public class ATParserTest extends TestCase {
 		testParse("def o.foo: x bar: y { 5 }",
 		          "(begin (define-external-method (symbol o) (apply (symbol foo:bar:) (table (symbol x) (symbol y))) (begin (number 5))))");		
 		testParse("def t[5] { a }",
-				 "(begin (define-table (symbol t) (number 5) (symbol a)))");
+				 "(begin (define-table (symbol t) (number 5) (begin (symbol a))))");
+		testParse("def t[5] { i := i + 1 }",
+		          "(begin (define-table (symbol t) (number 5) (begin (var-set (symbol i) (+ (symbol i) (number 1))))))");
 		testParse("def [x, y] := t",
                    "(begin (multi-def (table (symbol x) (symbol y)) (symbol t)))");
 		testParse("x := 7",

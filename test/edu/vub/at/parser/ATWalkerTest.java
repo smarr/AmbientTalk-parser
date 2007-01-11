@@ -47,6 +47,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("def o.f(a,b) { 5 }");
 		testWalker("def o.foo: x bar: y { 5 }", "def o.foo:bar:(x,y) { 5 }");
 		testWalker("def t[5] { a }");
+		testWalker("def t[5] { i := i + 1 }", "def t[5] { i := i.+(1) }");
 		testWalker("def [x, y] := [y, x]");
 		testWalker("x := 7");
 		testWalker("x[5] := 7");
