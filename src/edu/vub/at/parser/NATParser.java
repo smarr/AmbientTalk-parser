@@ -28,6 +28,7 @@
 package edu.vub.at.parser;
 
 import edu.vub.at.exceptions.InterpreterException;
+import edu.vub.at.exceptions.XIOProblem;
 import edu.vub.at.exceptions.XParseError;
 import edu.vub.at.objects.ATAbstractGrammar;
 import edu.vub.at.objects.ATObject;
@@ -36,6 +37,8 @@ import edu.vub.at.objects.natives.NATByCopy;
 import edu.vub.at.objects.natives.NATText;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import antlr.ANTLRException;
 import antlr.CommonAST;
@@ -55,27 +58,37 @@ public class NATParser extends NATByCopy {
 	public ATAbstractGrammar base_parse(ATText source) throws InterpreterException {
 		return parse(null, source.asNativeText().javaValue);
 	}
+
+	public static ATAbstractGrammar parse(String filename, InputStream source) throws InterpreterException {
+		try {
+			try {
+				LexerImpl lexer = new LexerImpl(source);
+				ParserImpl parser = new ParserImpl(lexer);
+				if (filename != null) {
+					parser.setFilename(filename);
+				}
+				source.mark(source.available());
+
+				// Parse the input expression
+				parser.program();
+				CommonAST t = (CommonAST)parser.getAST();
+
+				// Traverse the tree created by the parser
+				TreeWalkerImpl walker = new TreeWalkerImpl();
+				return walker.program(t);	
+			} catch(RecognitionException e) {
+				source.reset();
+				throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);
+			} catch(ANTLRException e) {
+				throw new XParseError(e.getMessage(), e);
+			}
+	    } catch (IOException e) {
+	    	throw new XIOProblem(e);
+	    }
+	}
 	
 	public static ATAbstractGrammar parse(String filename, String source) throws InterpreterException {
-		try {
-			LexerImpl lexer = new LexerImpl(new ByteArrayInputStream(source.getBytes()));
-			ParserImpl parser = new ParserImpl(lexer);
-			if (filename != null) {
-				parser.setFilename(filename);
-			}
-			
-			// Parse the input expression
-			parser.program();
-			CommonAST t = (CommonAST)parser.getAST();
-			
-			// Traverse the tree created by the parser
-			TreeWalkerImpl walker = new TreeWalkerImpl();
-			return walker.program(t);	
-		} catch(RecognitionException e) {
-			throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);
-		} catch(ANTLRException e) {
-			throw new XParseError(e.getMessage(), e);
-		}
+		return parse(filename, new ByteArrayInputStream(source.getBytes()));
 	}
 	
 	public NATText meta_print() throws InterpreterException {

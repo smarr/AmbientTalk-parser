@@ -67,11 +67,14 @@ public class ATWalkerTest extends TestCase {
 		testWalker("o.m");
 		testWalker(".m(a,b)");
 		testWalker("<-m(a,b)");
+		testWalker("^m(a,b)");
 		testWalker("t[a]");
 		testWalker("f()[a+b]", "f()[a.+(b)]");
 		testWalker("a");
 	    testWalker("o<+.m()","o.m()");
 	    testWalker("o<+foo()","o<+foo()");
+	    testWalker("o<+^foo()","o^foo()");
+	    testWalker("obj^m(a)");
 	}
 	
 	public void testQuasiquoting() {
@@ -87,7 +90,7 @@ public class ATWalkerTest extends TestCase {
 	
 	public void testOperatorGrammar() {
 		testWalker("1 + 2 + 3", "1.+(2).+(3)");
-		testWalker("a * b^3 + c < d / e - f", "a.*(b.^(3)).+(c).<(d./(e).-(f))");
+		testWalker("a * b!3 + c < d / e - f", "a.*(b.!(3)).+(c).<(d./(e).-(f))");
 		testWalker("+(1,2)");
 		testWalker("a.+(2)");
 		testWalker("+.m(1)");

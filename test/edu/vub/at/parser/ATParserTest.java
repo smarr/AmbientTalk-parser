@@ -117,6 +117,8 @@ public class ATParserTest extends TestCase {
 				 "(begin (message (apply (symbol m) (table (symbol a) (symbol b)))))");
 		testParse("<-m(a,b)",
 		          "(begin (async-message (apply (symbol m) (table (symbol a) (symbol b)))))");
+		testParse("^m(a,b)",
+                  "(begin (delegate (apply (symbol m) (table (symbol a) (symbol b)))))");
 		testParse("t[a]",
 		          "(begin (table-get (symbol t) (symbol a)))");
 		testParse("f()[a+b]",
@@ -151,8 +153,8 @@ public class ATParserTest extends TestCase {
 	public void testOperatorGrammar() {
 		testParse("1 + 2 + 3",
 				 "(begin (+ (+ (number 1) (number 2)) (number 3)))");
-		testParse("a * b^3 + c < d / e - f",
-		          "(begin (< (+ (* (symbol a) (^ (symbol b) (number 3))) (symbol c)) (- (/ (symbol d) (symbol e)) (symbol f)))) ");
+		testParse("a * b!3 + c < d / e - f",
+		          "(begin (< (+ (* (symbol a) (! (symbol b) (number 3))) (symbol c)) (- (/ (symbol d) (symbol e)) (symbol f)))) ");
 	    testParse("+(1,2)",
 	    		     "(begin (apply (symbol +) (table (number 1) (number 2))))");
 	    testParse("a.+(2)",
@@ -238,6 +240,9 @@ public class ATParserTest extends TestCase {
 	    testParse(
 	    		"o<+foo()",
 	    		"(begin (send (symbol o) (univ-message (apply (symbol foo) (table)))))");
+	    testParse(
+	    		"o^foo()",
+	    		"(begin (send (symbol o) (delegate (apply (symbol foo) (table)))))");
 	}
 	
 	/**

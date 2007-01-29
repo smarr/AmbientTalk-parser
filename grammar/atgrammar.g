@@ -144,6 +144,7 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          | HSH! unquotation
          | DOT! message
          | ARW! asyncmessage
+         | CAR! delegationmessage
          | USD! universalmessage
          | LPR! subexpression
          | LBC! block
@@ -182,7 +183,7 @@ unquotation!: uexp:invocation { #unquotation = #([AGUNQ,"unquote"], uexp); }
 // to be curried even further. When no appropriate tokens are left, the passed functor 
 // is returned.
 curried_invocation![AST functor]:
-      (LPR|LBR|DOT|ARW|USD) => i:invoke_expression[functor] c:curried_invocation[#i] { #curried_invocation = #c; }
+      (LPR|LBR|DOT|ARW|USD|CAR) => i:invoke_expression[functor] c:curried_invocation[#i] { #curried_invocation = #c; }
 	| {#curried_invocation = #functor; };
 
 // Invocation expressions are a single curried expression whether to apply, tabulate or
@@ -193,6 +194,7 @@ invoke_expression[AST functor]:
 	|! (DOT variable LPR | DOT KEY) => DOT apl:application { #invoke_expression = #([AGSND,"send"], functor, #([AGMSG,"message"], apl)); }
 	|  selection[functor]
 	|! (ARW variable LPR | ARW KEY) => ARW snd:application { #invoke_expression = #([AGSND,"send"], functor, #([AGAMS,"async-message"], snd)); }
+	|! (CAR variable LPR | CAR KEY) => CAR del:application { #invoke_expression = #([AGSND,"send"], functor, #([AGDEL,"delegate"], del)); }
 	|! (USD expression) => USD exp:expression { #invoke_expression = #([AGSND,"send"], functor, #([AGUSD,"univ-message"], exp)); };
 
 tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table-get"], functor, idx); };
@@ -227,6 +229,9 @@ message!: apl:application { #message = #([AGMSG,"message"], apl); };
 
 // First-class aynchronous message creation syntax: <-m() or <-key:val
 asyncmessage!: apl:application { #asyncmessage = #([AGAMS,"async-message"], apl); };
+
+// First-class delegation message creation syntax: ^m() or ^key:val
+delegationmessage!: apl:application { #delegationmessage = #([AGDEL,"delegate"], apl); };
 
 // First-class universal message: <+ expression
 universalmessage!: exp:expression { #universalmessage = #([AGUSD,"univ-message"], exp); };
@@ -315,6 +320,7 @@ protected AGAPL     : "apply";         // AGApplication(SYM sel, TAB arg)
 protected AGSEL     : "select";        // AGSelection(EXP rcv, SYM sel)
 protected AGMSG     : "message";       // AGMethodInvocation(SYM sel, TAB arg)
 protected AGAMS     : "async-message"; // AGAsyncMessage(SYM sel, TAB arg)
+protected AGDEL     : "delegate";      // AGDelegationCreation(SYM sel, TAB arg)
 protected AGUSD     : "univ-message";  // ATExpression(exp)
 protected AGTBL     : "table-get";     // AGTabulation(EXP tbl, EXP idx)
 protected AGSYM     : "symbol";        // AGSymbol(TXT nam)
@@ -355,7 +361,7 @@ protected ADDCHAR: ( '+' | '-')
 protected MULCHAR: ( '*' | '/' | '\\' | '&' )
 	;
 	
-protected POWCHAR: ( '^' | '!' | '?' | '%' )
+protected POWCHAR: ( '!' | '?' | '%' )
 	;
 	
 protected OPRCHAR: CMPCHAR | ADDCHAR | MULCHAR | POWCHAR
@@ -428,6 +434,7 @@ EQL options { paraphrase = "an assignment"; }: ":=";
 DOT options { paraphrase = "a selection"; }: '.';
 protected ARW: "<-"; // asynchronous send operator
 protected USD: "<+"; // universal send operator
+CAR options { paraphrase = "a delegation"; }: '^';
 PIP options { paraphrase = "a block argument list"; }: '|';
 
 BQU options { paraphrase = "a quotation"; }: '`';
@@ -587,6 +594,7 @@ message returns [ATExpression msg] throws InterpreterException
   	ATSymbol sel; NATTable arg; }
   	      : #(AGMSG #(AGAPL sel=symbol arg=table)) { msg = new AGMethodInvocationCreation(sel,arg); }
   	      | #(AGAMS #(AGAPL sel=symbol arg=table)) { msg = new AGAsyncMessageCreation(sel,arg); }
+  	      | #(AGDEL #(AGAPL sel=symbol arg=table)) { msg = new AGDelegationCreation(sel,arg); }
   	      | #(AGUSD exp=expression) { msg=exp; }
   	      ;
           
