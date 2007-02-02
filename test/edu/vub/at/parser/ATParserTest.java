@@ -108,7 +108,7 @@ public class ATParserTest extends TestCase {
 		testParse("o<-foo: a bar: b",
 		          "(begin (send (symbol o) (async-message (apply (symbol foo:bar:) (table (symbol a) (symbol b))))))");
 		testParse("super.m(a)",
-				 "(begin (send super (message (apply (symbol m) (table (symbol a))))))");
+				 "(begin (send (symbol super) (message (apply (symbol m) (table (symbol a))))))");
 		testParse("m(a,b)",
 				 "(begin (apply (symbol m) (table (symbol a) (symbol b))))");
 		testParse("o.m",

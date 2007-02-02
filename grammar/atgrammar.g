@@ -277,8 +277,8 @@ variable: symbol
          
 symbol!: var:NAM { #symbol = #([AGSYM,"symbol"], var); };
          
-pseudovariable!: "self" { #pseudovariable = #[AGSLF,"self"]; }
-               | "super" { #pseudovariable = #([AGSUP, "super"]); };
+pseudovariable!: "self" { #pseudovariable = #[AGSLF,"self"]; };
+               //| "super" { #pseudovariable = #([AGSUP, "super"]); };
 
 operator!: cmp:CMP { #operator = #([AGCMP, "symbol"], cmp); }
          | add:ADD { #operator = #([AGADD, "symbol"], add); }
@@ -325,7 +325,7 @@ protected AGUSD     : "univ-message";  // ATExpression(exp)
 protected AGTBL     : "table-get";     // AGTabulation(EXP tbl, EXP idx)
 protected AGSYM     : "symbol";        // AGSymbol(TXT nam)
 protected AGSLF     : "self";          // AGSelf
-protected AGSUP     : "super";         // AGSuper
+//protected AGSUP     : "super";         // AGSuper
 protected AGQUO     : "quote";         // AGQuote(STMT stmt)
 protected AGUNQ     : "unquote";       // AGUnquote(EXP exp)
 protected AGUQS     : "unquote-splice";// AGUnquoteSplice(EXP exp)
@@ -625,7 +625,6 @@ symbol returns [AGSymbol sym] throws InterpreterException { sym = null; }
           | #(AGMUL mul:MUL) { sym = AGSymbol.alloc(NATText.atValue(mul.getText())); }
           | #(AGPOW pow:POW) { sym = AGSymbol.alloc(NATText.atValue(pow.getText())); }
           | AGSLF { sym = AGSelf._INSTANCE_; }
-          | AGSUP { sym = AGSuper._INSTANCE_; }
           ;
 
 param returns [NATAbstractGrammar ag] throws InterpreterException
