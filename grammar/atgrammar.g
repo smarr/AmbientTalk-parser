@@ -69,11 +69,12 @@ morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
 
 // Statements can be either definitions assignments or ordinary expressions
 statement: ("def"! definition)
+         | ("defstripe"! stripedefinition)
          | (variable EQL) => varassignment
          | (assignment) => assignment
          | expression;
 
-// Definitions start with ambienttalk/2's only reserved word def
+// Definitions start with ambienttalk/2's only reserved word def (or defstripe)
 // def <name> := <expression> defines a variable which can be assigned later.
 // def <apl> { <body> } defines an immutable function.
 // def <name>[size-exp] { <init-expression> } defines and initializes a new table of a given size
@@ -82,7 +83,14 @@ definition!: nam:variable EQL val:expression { #definition = #([AGDEFFIELD,"defi
            | tbl:variable LBR siz:expression RBR LBC init:statementlist { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
            | par:parametertable EQL vls:expression { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
            | (variable DOT signature LBC) => rcv:variable DOT mth:signature LBC imp:statementlist { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
-           | rcvr:variable DOT name:variable EQL valu:expression { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); };
+           | rcvr:variable DOT name:variable EQL valu:expression { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); }
+           ;
+
+// def stripename;  is parsed into the intermediary representation as (define-stripe (symbol name) (table))
+// i.e. the second argument to define-stripe is an empty table
+stripedefinition!: nam:variable { #stripedefinition = #([AGDEFSTRIPE,"define-stripe"], nam, #([AGTAB,"table"], #([COM]) )); }
+                 | nme:variable SST parents:commalist { #stripedefinition = #([AGDEFSTRIPE, "define-stripe"], nme, parents); }
+                 ;
 
 // A function signature can either be a canonical parameter list of the form <fun(a,b,c)>
 // or a keyworded list of the form <foo: a bar: b>
@@ -308,6 +316,7 @@ protected AGDEFFUN  : "define-function";// AGDefFunction(SYM sel, TAB arg, BGN b
 protected AGDEFTABLE: "define-table";  // AGDefTable(SYM tbl, EXP siz, EXP ini)
 protected AGDEFEXTMTH: "define-external-method";// AGDefExternalMethod(SYM rcv, SYM sel, TAB arg, BGN bdy)
 protected AGDEFEXTFLD: "define-external-field"; // AGDefExternalField(SYM rcv, SYM nam, EXP val)
+protected AGDEFSTRIPE: "define-stripe"; // AGDefStripe(SYM nam, TAB parentExps)
 protected AGMULTIDEF: "multi-def";     // AGMultiDefinition(TAB par, EXP val)
 // Assignments
 protected AGASSVAR  : "var-set";       // AGAssignField(SYM nam, EXP val)
@@ -351,8 +360,8 @@ protected LETTER: ('a'..'z'|'A'..'Z' )
 
 protected EXPONENT: ('e' | 'E')
 	;
-	
-protected CMPCHAR: ('<' | '=' | '>' | '~' )
+
+protected CMPCHAR: ( '<' | '=' | '>' | '~' )
 	;
 
 protected ADDCHAR: ( '+' | '-')
@@ -388,7 +397,7 @@ NBR_OR_FRC options { paraphrase = "a number or fraction"; }: ( NBR EXPONENT ) =>
     ;
 
 protected CMP: CMPCHAR (OPRCHAR)*
-	;
+             ;
 
 ADD options { paraphrase = "an additive operator"; }: ADDCHAR (OPRCHAR)*
 	;
@@ -432,8 +441,11 @@ SMC options { paraphrase = "a semicolon"; }: ';';
 
 EQL options { paraphrase = "an assignment"; }: ":=";
 DOT options { paraphrase = "a selection"; }: '.';
+
 protected ARW: "<-"; // asynchronous send operator
 protected USD: "<+"; // universal send operator
+protected SST: "<:"; // substripe
+
 CAR options { paraphrase = "a delegation"; }: '^';
 PIP options { paraphrase = "a block argument list"; }: '|';
 
@@ -444,9 +456,9 @@ CAT options { paraphrase = "a splice"; }: '@';
 CMP_OR_ARW options { paraphrase = "a comparator, asynchronous or universal send"; }
           : ( "<-" ) => ARW  { $setType(ARW); }
           | ( "<+" ) => USD  { $setType(USD); }
+          | ( "<:" ) => SST  { $setType(SST); }
           |   CMP            { $setType(CMP); }
           ;
-
 
 TXT options { paraphrase = "a text string"; }: '"' (ESC|~('"'|'\\'|'\n'|'\r'))* '"'
 	;
@@ -555,6 +567,7 @@ definition returns [ATDefinition def] throws InterpreterException
           | #(AGDEFEXTFLD rcv=symbol nam=symbol val=expression) { def = new AGDefExternalField(rcv, nam, val); }
           | #(AGDEFTABLE nam=symbol idx=expression bdy=begin) { def = new AGDefTable(nam,idx,bdy); }
           | #(AGMULTIDEF pars=params val=expression) { def = new AGMultiDefinition(pars,val); }
+          | #(AGDEFSTRIPE nam=symbol pars=table) { def = new AGDefStripe(nam, pars); } // pars = the parent stripes here
           ;
 
 assignment returns [ATAssignment ass] throws InterpreterException
