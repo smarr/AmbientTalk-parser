@@ -150,6 +150,10 @@ public class ATParserTest extends TestCase {
 		          "(begin (quote (define-field (symbol x) (number 5))))");
  		testParse("`({ def x := 5 })",
                    "(begin (quote (closure (table) (begin (define-field (symbol x) (number 5))))))");
+ 		testParse("`foo:",
+                  "(begin (quote (symbol foo:)))");
+ 		testParse("`foo:bar:",
+                  "(begin (quote (symbol foo:bar:)))");
 	}
 	
 	/**

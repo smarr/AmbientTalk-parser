@@ -174,9 +174,14 @@ unary! : (operator (LPR|LBR|DOT|ARW|USD)) => var:operator { #unary = #var; }
 // the rule is ambiguous as `{ x } can both be interpreted as `{ statement } or as `blockliteral
 quotation: (options { generateAmbigWarnings=false; } :
              statementquotation
+           | keywordsymbol
            | invocationquotation);
 
 statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
+// we need special rules for parsing quotations of keywords like `foo: and `foo:bar:
+keywordsymbol!: ksm:KEYSYM { #keywordsymbol = #([AGQUO,"quote"],#([AGKSM,"symbol"], #ksm)); }
+              | key:KEY { #keywordsymbol = #([AGQUO,"quote"],#([AGKEY,"symbol"], #key)); }
+              ;
 invocationquotation!: inv:invocation { #invocationquotation = #([AGQUO,"quote"],#inv); };
 
 // An unquotation is an unquoted or unquote-spliced piece of source code
@@ -414,8 +419,13 @@ protected NAM: LETTER (DIGIT | LETTER)*
 protected KEY: NAM COLON
     ;
 
-NAM_OR_KEY options { paraphrase = "a name or a keyword"; }: ( NAM COLON ) => KEY  { $setType(KEY); }
-          |   NAM                 { $setType(NAM); }
+protected KEYSYM: (NAM COLON) (NAM COLON)*
+    ;
+
+NAM_OR_KEY options { paraphrase = "a name or a keyword"; }:
+      ( NAM COLON NAM ) => KEYSYM { $setType(KEYSYM); }
+    | ( NAM COLON ) => KEY  { $setType(KEY); }
+    |   NAM                 { $setType(NAM); }
     ;
 
 WHITESPACE options { paraphrase = "whitespace"; }: ('\t' |  ' ')
@@ -633,6 +643,8 @@ literal returns[ATExpression lit] throws InterpreterException
           
 symbol returns [AGSymbol sym] throws InterpreterException { sym = null; }
           : #(AGSYM txt:NAM) { sym = AGSymbol.alloc(NATText.atValue(txt.getText())); }
+          | #(AGKEY key:KEY) { sym = AGSymbol.alloc(NATText.atValue(key.getText())); }
+          | #(AGKSM ksm:KEYSYM) { sym = AGSymbol.alloc(NATText.atValue(ksm.getText())); }
           | #(AGCMP cmp:CMP) { sym = AGSymbol.alloc(NATText.atValue(cmp.getText())); }
           | #(AGADD add:ADD) { sym = AGSymbol.alloc(NATText.atValue(add.getText())); }
           | #(AGMUL mul:MUL) { sym = AGSymbol.alloc(NATText.atValue(mul.getText())); }
