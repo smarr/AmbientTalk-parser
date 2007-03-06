@@ -424,7 +424,7 @@ protected CMP: CMPCHAR (OPRCHAR)*
 ADD options { paraphrase = "an additive operator"; }: ADDCHAR (OPRCHAR)*
 	;
 
-MUL options { paraphrase = "a multiplicative operator"; }: MULCHAR (OPRCHAR)*
+protected MUL options { paraphrase = "a multiplicative operator"; }: MULCHAR (OPRCHAR)*
 	;
 
 POW options { paraphrase = "an exponential operator"; }: POWCHAR (OPRCHAR)*
@@ -439,19 +439,22 @@ protected KEY: NAM COLON
 protected KEYSYM: (NAM COLON) (NAM COLON)*
     ;
 
-NAM_OR_KEY options { paraphrase = "a name or a keyword"; }:
-      ( NAM COLON NAM ) => KEYSYM { $setType(KEYSYM); }
+// distinguish between:
+// keyworded symbols, like `foo:bar:
+// keywords, like foo:
+// normal identifiers, like foo
+NAM_OR_KEY options { paraphrase = "a name or a keyword"; }
+    : ( NAM COLON NAM ) => KEYSYM { $setType(KEYSYM); }
     | ( NAM COLON ) => KEY  { $setType(KEY); }
     |   NAM                 { $setType(NAM); }
     ;
 
-WHITESPACE options { paraphrase = "whitespace"; }: ('\t' |  ' ')
-           { $setType(Token.SKIP); }
+WHITESPACE options { paraphrase = "whitespace"; }
+    : ('\t' |  ' ') { $setType(Token.SKIP); }
     ;
     
-NEWLINE options { paraphrase = "newline"; }:  ( "\r\n" | '\r' | '\n')
-          { newline(); 
-            $setType(Token.SKIP); }
+NEWLINE options { paraphrase = "newline"; }
+    :  ( "\r\n" | '\r' | '\n') { newline(); $setType(Token.SKIP); }
     ;
     
 LPR options { paraphrase = "a left parenthesis"; }: '(';
@@ -490,13 +493,17 @@ CMP_OR_ARW options { paraphrase = "a comparator, asynchronous or universal send"
 TXT options { paraphrase = "a text string"; }: '"' (ESC|~('"'|'\\'|'\n'|'\r'))* '"'
 	;
 
-    // Single-line comments
-SL_COMMENT options { paraphrase = "a single-line comment"; }
-	:	"//" WHITESPACE
-		(~('\n'|'\r'))* ('\n'|'\r'('\n')?)
-		{$setType(Token.SKIP); newline();}
-	;
+// Single-line comments
+protected SL_COMMENT
+    : "//" (~('\n'|'\r'))* ('\r')? '\n' {$setType(Token.SKIP); newline(); }
+    ;
 
+// to distinguish between operators starting with '/' and single-line
+// comments starting with '//'
+SL_COMMENT_OR_MUL_OPR
+    : ("//") => SL_COMMENT { $setType(Token.SKIP); }
+    | MUL                  { $setType(MUL); }
+    ;
 // multiple-line comments
 ML_COMMENT options { paraphrase = "a multi-line comment"; }
 	:	"/*"
@@ -603,7 +610,7 @@ definition returns [ATDefinition def] throws InterpreterException
           | { bdy = emptyMethodBody(); }
             #(AGDEFTABLE nam=symbol idx=expression (bdy=begin)? ) { def = new AGDefTable(nam,idx,bdy); }
           | #(AGMULTIDEF pars=params 
-            { val= NATTable.withSize(pars.base_getLength()); } 
+            { val= NATTable.ofSize(pars.elements_.length); } 
             (val=expression)? ) 
             { def = new AGMultiDefinition(pars,val); }
           | #(AGDEFSTRIPE nam=symbol pars=table) { def = new AGDefStripe(nam, pars); } // pars = the parent stripes here

@@ -10,8 +10,10 @@ import edu.vub.at.parser.TreeWalkerImpl;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import antlr.CharStreamException;
 import antlr.CommonAST;
 import antlr.RecognitionException;
+import antlr.Token;
 import antlr.TokenStreamException;
 import junit.framework.TestCase;
 
@@ -51,6 +53,17 @@ public class ATParserTest extends TestCase {
 		} catch(Exception e) {
 			fail("Exception: "+e); 
 		}
+	}
+	
+	protected void showTokenStreamOf(String text) throws CharStreamException, TokenStreamException {
+		InputStream input = new ByteArrayInputStream(text.getBytes());
+		LexerImpl lexer = new LexerImpl(input);
+		Token t = lexer.nextToken();
+		while (t.getType() != Token.EOF_TYPE) {
+			System.out.println(t.toString());
+			t = lexer.nextToken();
+		}
+		System.out.println("<END OF STREAM>");
 	}
 	
 	/**
@@ -189,6 +202,8 @@ public class ATParserTest extends TestCase {
                   "(begin (send (symbol +) (message (apply (symbol m) (table (number 1))))))");
 	    testParse("+.m",
                   "(begin (select (symbol +) (symbol m)))");
+	    testParse("m.+",
+                  "(begin (select (symbol m) (symbol +)))");
 	    testParse("-1",
                   "(begin (apply (symbol -) (table (number 1))))");
 	    testParse("-t[5]",
@@ -338,6 +353,20 @@ public class ATParserTest extends TestCase {
 				                                                      "(define-function (apply (symbol withX:Y:) (table (symbol anX) (symbol aY)))" +
 				                                                                      "(begin (var-set (symbol x) (symbol anX))" +
 				                                                                             "(var-set (symbol y) (symbol anY))))))))))");
+	}
+	
+	public void testComments() throws TokenStreamException, CharStreamException {
+		testParse("/* test */ 1 /* the */ + /* multiline\n */ 2 /* comments */",
+				  "(begin (+ (number 1) (number 2)))");
+		// NOTE THAT THE NEWLINE AT THE END IS OBLIGATORY!!!
+		testParse("1 + 2//test single line comments\n",
+		          "(begin (+ (number 1) (number 2)))");
+		// test whether operators that start with '/' work fine
+		testParse("1 /+/ 2",
+				  "(begin (/+/ (number 1) (number 2)))");
+		// test whether '//' is not interpreted as an operator
+		testParse("1 // 2\n",
+				  "(begin (number 1))");
 	}
 	
 }
