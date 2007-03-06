@@ -62,22 +62,38 @@ public class ATParserTest extends TestCase {
 				 "(begin (symbol a) (symbol b) (symbol c))");
 		testParse("a;b;c;",
 		          "(begin (symbol a) (symbol b) (symbol c))");
+		testParse("def x",
+		 		 "(begin (define-field (symbol x)))");
 		testParse("def x := 5",
 				 "(begin (define-field (symbol x) (number 5)))");
+		testParse("def o.x",
+				 "(begin (define-external-field (symbol o) (symbol x)))");
 		testParse("def o.x := 5",
 		          "(begin (define-external-field (symbol o) (symbol x) (number 5)))");
+		testParse("def f(a,b)",
+				 "(begin (define-function (apply (symbol f) (table (symbol a) (symbol b)))))");
 		testParse("def f(a,b) { 5 }",
 				 "(begin (define-function (apply (symbol f) (table (symbol a) (symbol b))) (begin (number 5))))");
+		testParse("def foo: x bar: y",
+				 "(begin (define-function (apply (symbol foo:bar:) (table (symbol x) (symbol y)))))");
 		testParse("def foo: x bar: y { 5 }",
 				 "(begin (define-function (apply (symbol foo:bar:) (table (symbol x) (symbol y))) (begin (number 5))))");
+		testParse("def o.f(a,b)",
+				 "(begin (define-external-method (symbol o) (apply (symbol f) (table (symbol a) (symbol b)))))");
 		testParse("def o.f(a,b) { 5 }",
 		          "(begin (define-external-method (symbol o) (apply (symbol f) (table (symbol a) (symbol b))) (begin (number 5))))");
+		testParse("def o.foo: x bar: y",
+				 "(begin (define-external-method (symbol o) (apply (symbol foo:bar:) (table (symbol x) (symbol y)))))");		
 		testParse("def o.foo: x bar: y { 5 }",
 		          "(begin (define-external-method (symbol o) (apply (symbol foo:bar:) (table (symbol x) (symbol y))) (begin (number 5))))");		
+		testParse("def t[5]",
+				 "(begin (define-table (symbol t) (number 5)))");
 		testParse("def t[5] { a }",
 				 "(begin (define-table (symbol t) (number 5) (begin (symbol a))))");
 		testParse("def t[5] { i := i + 1 }",
 		          "(begin (define-table (symbol t) (number 5) (begin (var-set (symbol i) (+ (symbol i) (number 1))))))");
+		testParse("def [x, y]",
+				 "(begin (multi-def (table (symbol x) (symbol y))))");
 		testParse("def [x, y] := t",
                    "(begin (multi-def (table (symbol x) (symbol y)) (symbol t)))");
 		testParse("x := 7",

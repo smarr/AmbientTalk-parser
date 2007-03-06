@@ -34,20 +34,29 @@ public class ATWalkerTest extends TestCase {
             NATAbstractGrammar ag = walker.program(t);
             assertEquals(output.replaceAll("\\s",""), ag.meta_print().javaValue.replaceAll("\\s",""));
         } catch(Exception e) {
+        		e.printStackTrace();
             fail("exception: "+e);
         }
 	}
 	
 	public void testStatementGrammar() {
 		testWalker("a; b; c");
+		testWalker("def x", "def x := nil");
 		testWalker("def x := 5");
+		testWalker("def o.x", "def o.x := nil");
 		testWalker("def o.x := 5");
+		testWalker("def f(a,b)", "def f(a,b) { nil }");
 		testWalker("def f(a,b) { 5 }");
+		testWalker("def foo: x bar: y", "def foo:bar:(x,y) { nil }");
 		testWalker("def foo: x bar: y { 5 }", "def foo:bar:(x,y) { 5 }");
+		testWalker("def o.f(a,b)", "def o.f(a,b) { nil }");
 		testWalker("def o.f(a,b) { 5 }");
+		testWalker("def o.foo: x bar: y", "def o.foo:bar:(x,y) { nil }");
 		testWalker("def o.foo: x bar: y { 5 }", "def o.foo:bar:(x,y) { 5 }");
+		testWalker("def t[5]", "def t[5] { nil }");
 		testWalker("def t[5] { a }");
 		testWalker("def t[5] { i := i + 1 }", "def t[5] { i := i.+(1) }");
+		testWalker("def [x, y]", "def [x, y] := [ nil, nil ]");
 		testWalker("def [x, y] := [y, x]");
 		testWalker("x := 7");
 		testWalker("x[5] := 7");

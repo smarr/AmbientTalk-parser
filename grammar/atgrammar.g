@@ -78,13 +78,27 @@ statement: ("def"! definition)
 // def <name> := <expression> defines a variable which can be assigned later.
 // def <apl> { <body> } defines an immutable function.
 // def <name>[size-exp] { <init-expression> } defines and initializes a new table of a given size
-definition!: nam:variable EQL val:expression { #definition = #([AGDEFFIELD,"define-field"], nam, val); }
-           | inv:signature LBC bdy:statementlist { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
-           | tbl:variable LBR siz:expression RBR LBC init:statementlist { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
-           | par:parametertable EQL vls:expression { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
-           | (variable DOT signature LBC) => rcv:variable DOT mth:signature LBC imp:statementlist { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
-           | rcvr:variable DOT name:variable EQL valu:expression { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); }
+definition!: nam:variable val:valueDefinition { #definition = #([AGDEFFIELD,"define-field"], nam, val); }
+           | inv:signature bdy:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
+           | tbl:variable LBR siz:expression RBR init:methodBodyDefinition { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
+           | par:parametertable vls:valueDefinition { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
+           | (variable DOT signature) => rcv:variable DOT mth:signature imp:methodBodyDefinition { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
+           | rcvr:variable DOT name:variable valu:valueDefinition { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); }
            ;
+
+valueDefinition!
+			: (SMC) => 
+			| (RBC) =>
+			| (EOF) =>
+			| EQL val:expression { #valueDefinition = #val; }
+			;
+
+methodBodyDefinition!
+			: (SMC) =>
+			| (RBC) =>
+			| (EOF) =>
+			| LBC bdy:statementlist { #methodBodyDefinition = #bdy; }
+			;
 
 // def stripename;  is parsed into the intermediary representation as (define-stripe (symbol name) (table))
 // i.e. the second argument to define-stripe is an empty table
@@ -552,6 +566,10 @@ class TreeWalkerImpl extends TreeParser;
 	                           new AGMethodInvocationCreation(AGSymbol.alloc(NATText.atValue(opr.getText())),
   	                                                          NATTable.atValue(new ATObject[] { operand })));
   }
+  
+  public AGBegin emptyMethodBody() {
+  	  return new AGBegin(NATTable.atValue( new ATObject[] { AGSymbol.jAlloc("nil") } ));
+  }
 
 } // end TreeWalker preamble
 
@@ -571,12 +589,20 @@ definition returns [ATDefinition def] throws InterpreterException
   	NATTable pars;
   	ATExpression idx, val;
   	ATBegin bdy; }
-          : #(AGDEFFIELD nam=symbol val=expression) { def = new AGDefField(nam, val); }
-          | #(AGDEFFUN #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefFunction(nam, pars, bdy); }
-          | #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) bdy=begin) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
-          | #(AGDEFEXTFLD rcv=symbol nam=symbol val=expression) { def = new AGDefExternalField(rcv, nam, val); }
-          | #(AGDEFTABLE nam=symbol idx=expression bdy=begin) { def = new AGDefTable(nam,idx,bdy); }
-          | #(AGMULTIDEF pars=params val=expression) { def = new AGMultiDefinition(pars,val); }
+          : { val = AGSymbol.jAlloc("nil"); }
+            #(AGDEFFIELD nam=symbol (val=expression)?) { def = new AGDefField(nam, val); }
+          | { bdy = emptyMethodBody(); } 
+            #(AGDEFFUN #(AGAPL nam=symbol pars=params) (bdy=begin)? ) { def = new AGDefFunction(nam, pars, bdy); }
+          | { bdy = emptyMethodBody(); }
+            #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) (bdy=begin)? ) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
+          | { val = AGSymbol.jAlloc("nil"); }
+            #(AGDEFEXTFLD rcv=symbol nam=symbol (val=expression)? )  { def = new AGDefExternalField(rcv, nam, val); }
+          | { bdy = emptyMethodBody(); }
+            #(AGDEFTABLE nam=symbol idx=expression (bdy=begin)? ) { def = new AGDefTable(nam,idx,bdy); }
+          | #(AGMULTIDEF pars=params 
+            { val= NATTable.withSize(pars.base_getLength()); } 
+            (val=expression)? ) 
+            { def = new AGMultiDefinition(pars,val); }
           | #(AGDEFSTRIPE nam=symbol pars=table) { def = new AGDefStripe(nam, pars); } // pars = the parent stripes here
           ;
 
