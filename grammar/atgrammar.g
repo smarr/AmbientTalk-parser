@@ -85,7 +85,8 @@ definition!: nam:variable val:valueDefinition { #definition = #([AGDEFFIELD,"def
            | (variable DOT signature) => rcv:variable DOT mth:signature imp:methodBodyDefinition { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
            | rcvr:variable DOT name:variable valu:valueDefinition { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); }
            ;
-
+// allows definitions which are supposedly followed by a := sign and an expression to associate
+// no value with the defined value, this value is then filled in by the treewalker to be nil
 valueDefinition!
 			: (SMC) => 
 			| (RBC) =>
@@ -93,6 +94,8 @@ valueDefinition!
 			| EQL val:expression { #valueDefinition = #val; }
 			;
 
+// allows definitions which are supposedly followed by a closure expression to associate no
+// value with the defined value, this value is then filled in by the treewalker to be an empty closure
 methodBodyDefinition!
 			: (SMC) =>
 			| (RBC) =>
