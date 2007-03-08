@@ -70,6 +70,7 @@ morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
 // Statements can be either definitions assignments or ordinary expressions
 statement: ("def"! definition)
          | ("defstripe"! stripedefinition)
+         | ("import"! importstatement)
          | (variable EQL) => varassignment
          | (assignment) => assignment
          | expression;
@@ -108,6 +109,27 @@ methodBodyDefinition!
 stripedefinition!: nam:variable { #stripedefinition = #([AGDEFSTRIPE,"define-stripe"], nam, #([AGTAB,"table"], #([COM]) )); }
                  | nme:variable SST parents:commalist { #stripedefinition = #([AGDEFSTRIPE, "define-stripe"], nme, parents); }
                  ;
+
+// import host alias { a -> b } exclude { c, d};  is parsed into the intermediary representation
+// as (import (symbol host) (table (table (a b))) (table (c d)))  [with a,b,c,d = (symbol _)]
+importstatement!: host:expression alias:aliasbindings exclude:excludelist
+   { #importstatement = #([AGIMPORT,"import"], host, alias, exclude); }
+                ;
+                
+aliasbindings: "alias"! aliasbinding (COM! aliasbinding)* { #aliasbindings = #([AGTAB, "table"], #aliasbindings); }
+             | /* nothing */ { #aliasbindings = #([AGTAB, "table"], #([COM])); }
+             ;
+             
+aliasbinding!: (name1:importname EQL name2:importname) { #aliasbinding = #([AGTAB, "table"],name1, name2); }
+             ;
+
+excludelist: "exclude"! importname (COM! importname)* { #excludelist = #([AGTAB, "table"], #excludelist); }
+           | /* nothing */ { #excludelist = #([AGTAB, "table"], #([COM])); }
+           ;
+
+// valid import names are: normal identifiers, keywords (e.g. foo:bar:) and operators
+importname : keywordsymbol | variable
+           ;
 
 // A function signature can either be a canonical parameter list of the form <fun(a,b,c)>
 // or a keyworded list of the form <foo: a bar: b>
@@ -191,13 +213,13 @@ unary! : (operator (LPR|LBR|DOT|ARW|USD)) => var:operator { #unary = #var; }
 // the rule is ambiguous as `{ x } can both be interpreted as `{ statement } or as `blockliteral
 quotation: (options { generateAmbigWarnings=false; } :
              statementquotation
-           | keywordsymbol
+           |! k:keywordsymbol { #quotation = #([AGQUO,"quote"],k); }
            | invocationquotation);
 
 statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
 // we need special rules for parsing quotations of keywords like `foo: and `foo:bar:
-keywordsymbol!: ksm:KEYSYM { #keywordsymbol = #([AGQUO,"quote"],#([AGKSM,"symbol"], #ksm)); }
-              | key:KEY { #keywordsymbol = #([AGQUO,"quote"],#([AGKEY,"symbol"], #key)); }
+keywordsymbol!: ksm:KEYSYM { #keywordsymbol = #([AGKSM,"symbol"], #ksm); }
+              | key:KEY { #keywordsymbol = #([AGKEY,"symbol"], #key); }
               ;
 invocationquotation!: inv:invocation { #invocationquotation = #([AGQUO,"quote"],#inv); };
 
@@ -308,7 +330,6 @@ variable: symbol
 symbol!: var:NAM { #symbol = #([AGSYM,"symbol"], var); };
          
 pseudovariable!: "self" { #pseudovariable = #[AGSLF,"self"]; };
-               //| "super" { #pseudovariable = #([AGSUP, "super"]); };
 
 operator!: cmp:CMP { #operator = #([AGCMP, "symbol"], cmp); }
          | add:ADD { #operator = #([AGADD, "symbol"], add); }
@@ -339,6 +360,7 @@ protected AGDEFTABLE: "define-table";  // AGDefTable(SYM tbl, EXP siz, EXP ini)
 protected AGDEFEXTMTH: "define-external-method";// AGDefExternalMethod(SYM rcv, SYM sel, TAB arg, BGN bdy)
 protected AGDEFEXTFLD: "define-external-field"; // AGDefExternalField(SYM rcv, SYM nam, EXP val)
 protected AGDEFSTRIPE: "define-stripe"; // AGDefStripe(SYM nam, TAB parentExps)
+protected AGIMPORT: "import"; // AGImport(EXP host, TAB aliases, TAB excludes)
 protected AGMULTIDEF: "multi-def";     // AGMultiDefinition(TAB par, EXP val)
 // Assignments
 protected AGASSVAR  : "var-set";       // AGAssignField(SYM nam, EXP val)
@@ -591,6 +613,7 @@ statement returns [ATStatement stmt] throws InterpreterException { stmt = null; 
           : stmt=definition
           | stmt=assignment
           | stmt=expression
+          | stmt=importstmt
           ;
 
 definition returns [ATDefinition def] throws InterpreterException
@@ -614,6 +637,13 @@ definition returns [ATDefinition def] throws InterpreterException
             (val=expression)? ) 
             { def = new AGMultiDefinition(pars,val); }
           | #(AGDEFSTRIPE nam=symbol pars=table) { def = new AGDefStripe(nam, pars); } // pars = the parent stripes here
+          ;
+
+importstmt returns [ATImport imp] throws InterpreterException
+  { imp = null;
+  	ATExpression host;
+  	NATTable aliases, excludes; }
+          : #(AGIMPORT host=expression aliases=table excludes=table) { imp = new AGImport(host, aliases, excludes); }
           ;
 
 assignment returns [ATAssignment ass] throws InterpreterException

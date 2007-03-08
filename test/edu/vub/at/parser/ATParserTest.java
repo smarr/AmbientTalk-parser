@@ -125,6 +125,14 @@ public class ATParserTest extends TestCase {
 				  "(begin (define-stripe (symbol foo) (table (symbol bar))))");
 		testParse("defstripe foo <: bar, o.x",
 		          "(begin (define-stripe (symbol foo) (table (symbol bar) (select (symbol o) (symbol x)))))");
+		testParse("import o alias a := b, c := d exclude e, f",
+				  "(begin (import (symbol o) (table (table (symbol a) (symbol b)) (table (symbol c) (symbol d))) (table (symbol e) (symbol f))))");
+		testParse("import o.m()",
+		          "(begin (import (send (symbol o) (message (apply (symbol m) (table)))) (table) (table)))");
+		testParse("import o alias a: := b:c:",
+		          "(begin (import (symbol o) (table (table (symbol a:) (symbol b:c:))) (table)))");
+		testParse("import o exclude e",
+		          "(begin (import (symbol o) (table) (table (symbol e))))");
 	}
 	
 	/**

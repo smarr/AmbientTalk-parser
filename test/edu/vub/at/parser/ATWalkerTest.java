@@ -66,6 +66,10 @@ public class ATWalkerTest extends TestCase {
 		testWalker("defstripe foo");
 		testWalker("defstripe foo <: bar");
 		testWalker("defstripe foo <: bar, o.x");
+		testWalker("import o alias a := b, c := d exclude e, f");
+		testWalker("import o.m()");
+		testWalker("import o alias a: := b:c:");
+		testWalker("import o exclude e");
 	}
 	
 	public void testExpressionGrammar() {
