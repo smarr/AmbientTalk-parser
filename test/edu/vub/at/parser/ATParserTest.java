@@ -366,6 +366,8 @@ public class ATParserTest extends TestCase {
 	public void testComments() throws TokenStreamException, CharStreamException {
 		testParse("/* test */ 1 /* the */ + /* multiline\n */ 2 /* comments */",
 				  "(begin (+ (number 1) (number 2)))");
+		testParse("{ nil /* an empty block */ }",
+		          "(begin (closure (table) (begin (symbol nil))))");
 		// NOTE THAT THE NEWLINE AT THE END IS OBLIGATORY!!!
 		testParse("1 + 2//test single line comments\n",
 		          "(begin (+ (number 1) (number 2)))");
