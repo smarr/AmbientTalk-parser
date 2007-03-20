@@ -399,7 +399,7 @@ protected AGPOW     : "symbol";
 protected DIGIT: '0'..'9'
     ;
     
-protected LETTER: ('a'..'z'|'A'..'Z' )
+protected LETTER: ('a'..'z'|'A'..'Z'|'_')
     ;
 
 protected EXPONENT: ('e' | 'E')
