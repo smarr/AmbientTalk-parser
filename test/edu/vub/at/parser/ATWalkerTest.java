@@ -155,4 +155,12 @@ public class ATWalkerTest extends TestCase {
 	    testWalker("def foo(x := #5) { 1 }", "def foo(x := #(5)) { 1 }");
 	}
 
+	public void testAnnotations() {
+		testWalker("o.m(1)@[]", "o.m(1)");
+		testWalker("o.m(1)@x");
+		testWalker("o^m(1)@x");
+		testWalker("o<-m(1)@x");
+		testWalker("o.m(1)@[x,y]");
+	}
+
 }

@@ -243,10 +243,10 @@ curried_invocation![AST functor]:
 invoke_expression[AST functor]:
 	 ! LPR args:commalist RPR  { #invoke_expression = #([AGAPL,"apply"], functor, args); }
 	|  tabulation[functor]
-	|! (DOT variable LPR | DOT KEY) => DOT apl:application { #invoke_expression = #([AGSND,"send"], functor, #([AGMSG,"message"], apl)); }
+	|! (DOT variable LPR | DOT KEY) => DOT msg:message { #invoke_expression = #([AGSND,"send"], functor, msg); }
 	|  selection[functor]
-	|! (ARW variable LPR | ARW KEY) => ARW snd:application { #invoke_expression = #([AGSND,"send"], functor, #([AGAMS,"async-message"], snd)); }
-	|! (CAR variable LPR | CAR KEY) => CAR del:application { #invoke_expression = #([AGSND,"send"], functor, #([AGDEL,"delegate"], del)); }
+	|! (ARW variable LPR | ARW KEY) => ARW snd:asyncmessage { #invoke_expression = #([AGSND,"send"], functor, snd); }
+	|! (CAR variable LPR | CAR KEY) => CAR del:delegationmessage { #invoke_expression = #([AGSND,"send"], functor, del); }
 	|! (USD expression) => USD exp:expression { #invoke_expression = #([AGSND,"send"], functor, #([AGUSD,"univ-message"], exp)); };
 
 tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table-get"], functor, idx); };
@@ -255,10 +255,15 @@ selection![AST functor]: DOT var:variable { #selection = #([AGSEL,"select"], fun
 // Function application can be done using two distinct mechanisms, either using a 
 // canonical format ( foobar( a1, a2 ) ) or using keywordlists (foo: a1 bar: a2).
 // The latter format is used often in conjunction with blocks.
-application: canonical
-           | keywordlist;
+// Note also that a canonical message send can be annotated, i.e. o.m(arg)@annotation-expression
+application![int tokenType, String tokenText]: c:canonical a:annotation { #application = #([tokenType,tokenText], c, a); }
+                                             | k:keywordlist { #application = #([tokenType,tokenText], k); };
 
 canonical!: var:variable LPR args:commalist RPR { #canonical = #([AGAPL,"apply"], var, args); }; 
+
+annotation!: CAT exp:expression { #annotation = #exp; }
+           | /* EMPTY */
+           ;
 
 // Keyworded message sends are an alternation of keywords (names ending with a colon)
 // and ordinary expressions. They allow for elegant ways to write control structures
@@ -267,7 +272,7 @@ canonical!: var:variable LPR args:commalist RPR { #canonical = #([AGAPL,"apply"]
 // longest possible chain. As a consequence, nested keyworded message consume all keywords
 // unless they are delimited using e.g. subexpressions.
 // TECH: The grammar is (inevitably?) ambiguous here, as we are aware of the problem, we
-// switch off the warning for this grammar rule. 
+// switch off the warning for this grammar rule.
 keywordlist: singlekeyword
 			 (options {
 				warnWhenFollowAmbig = false;
@@ -277,13 +282,13 @@ keywordlist: singlekeyword
 singlekeyword: KEY^ argument;
 
 // First-class message creation syntax: .m() or .key:val
-message!: apl:application { #message = #([AGMSG,"message"], apl); };
+message: apl:application[AGMSG,"message"]; //{ #message = #([AGMSG,"message"], apl); };
 
 // First-class aynchronous message creation syntax: <-m() or <-key:val
-asyncmessage!: apl:application { #asyncmessage = #([AGAMS,"async-message"], apl); };
+asyncmessage: apl:application[AGAMS, "async-message"]; //{ #asyncmessage = #([AGAMS,"async-message"], apl); };
 
 // First-class delegation message creation syntax: ^m() or ^key:val
-delegationmessage!: apl:application { #delegationmessage = #([AGDEL,"delegate"], apl); };
+delegationmessage: apl:application[AGDEL, "delegate"]; //{ #delegationmessage = #([AGDEL,"delegate"], apl); };
 
 // First-class universal message: <+ expression
 universalmessage!: exp:expression { #universalmessage = #([AGUSD,"univ-message"], exp); };
@@ -371,9 +376,9 @@ protected AGMULTIASS: "multi-set";     // AGMultiAssignment(TAB par, EXP val)
 protected AGSND     : "send";          // AGMessageSend(EXP rcv, MSG msg)
 protected AGAPL     : "apply";         // AGApplication(SYM sel, TAB arg)
 protected AGSEL     : "select";        // AGSelection(EXP rcv, SYM sel)
-protected AGMSG     : "message";       // AGMethodInvocation(SYM sel, TAB arg)
-protected AGAMS     : "async-message"; // AGAsyncMessage(SYM sel, TAB arg)
-protected AGDEL     : "delegate";      // AGDelegationCreation(SYM sel, TAB arg)
+protected AGMSG     : "message";       // AGMethodInvocation(SYM sel, TAB arg, [])
+protected AGAMS     : "async-message"; // AGAsyncMessage(SYM sel, TAB arg, [])
+protected AGDEL     : "delegate";      // AGDelegationCreation(SYM sel, TAB arg, [])
 protected AGUSD     : "univ-message";  // ATExpression(exp)
 protected AGTBL     : "table-get";     // AGTabulation(EXP tbl, EXP idx)
 protected AGSYM     : "symbol";        // AGSymbol(TXT nam)
@@ -590,13 +595,15 @@ protected ESC
   import edu.vub.at.exceptions.InterpreterException;
   import java.util.LinkedList; }
 class TreeWalkerImpl extends TreeParser;
+
 { // begin TreeWalker preamble
 
   // this auxiliary function converts operator syntax such as <a+b> into a message send of the form <a.+(b)>
   public AGMessageSend operatorToSend(AST opr, ATExpression receiver, ATExpression operand) {
 	  return new AGMessageSend(receiver,
 	                           new AGMethodInvocationCreation(AGSymbol.alloc(NATText.atValue(opr.getText())),
-  	                                                          NATTable.atValue(new ATObject[] { operand })));
+  	                                                          NATTable.atValue(new ATObject[] { operand }),
+  	                                                          NATTable.EMPTY));
   }
   
   public AGBegin emptyMethodBody() {
@@ -680,10 +687,10 @@ expression returns [ATExpression exp] throws InterpreterException
 message returns [ATExpression msg] throws InterpreterException
   { msg = null;
   	ATExpression exp;
-  	ATSymbol sel; NATTable arg; }
-  	      : #(AGMSG #(AGAPL sel=symbol arg=table)) { msg = new AGMethodInvocationCreation(sel,arg); }
-  	      | #(AGAMS #(AGAPL sel=symbol arg=table)) { msg = new AGAsyncMessageCreation(sel,arg); }
-  	      | #(AGDEL #(AGAPL sel=symbol arg=table)) { msg = new AGDelegationCreation(sel,arg); }
+  	ATSymbol sel; NATTable arg; ATExpression ann = NATTable.EMPTY; }
+  	      : #(AGMSG #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGMethodInvocationCreation(sel,arg,ann); }
+  	      | #(AGAMS #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGAsyncMessageCreation(sel,arg,ann); }
+  	      | #(AGDEL #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGDelegationCreation(sel,arg,ann); }
   	      | #(AGUSD exp=expression) { msg=exp; }
   	      ;
           

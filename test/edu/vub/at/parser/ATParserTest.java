@@ -68,7 +68,7 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Tests for the validity of all statement abstract grammar elements.
-	 * @covers all individual statement abstract grammar elements
+	 * covers all individual statement abstract grammar elements
 	 */
 	public void testStatementGrammar() {
 		testParse("a;b;c",
@@ -137,7 +137,7 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Tests for the validity of all expression abstract grammar elements.
-	 * @covers all individual expression abstract grammar elements
+	 * covers all individual expression abstract grammar elements
 	 */
 	public void testExpressionGrammar() {
 		testParse("o.m(a,b)",
@@ -173,9 +173,9 @@ public class ATParserTest extends TestCase {
 	public void testQuasiquoting() {
 		testParse("`(t[a] + 1)",
                   "(begin (quote (+ (table-get (symbol t) (symbol a)) (number 1))))");
-         testParse("#(t[a] + 1)",
+        testParse("#(t[a] + 1)",
                     "(begin (unquote (+ (table-get (symbol t) (symbol a)) (number 1))))");
-         testParse("#@(t[a] + 1)",
+        testParse("#@(t[a] + 1)",
                    "(begin (unquote-splice (+ (table-get (symbol t) (symbol a)) (number 1))))");
  		testParse("`t[a] + 1",
  				  "(begin (+ (quote (table-get (symbol t) (symbol a))) (number 1)))");
@@ -195,7 +195,7 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Tests for the validity of infix operator expressions and operator symbols in general
-	 * @covers infix operators
+	 * covers infix operators
 	 */
 	public void testOperatorGrammar() {
 		testParse("1 + 2 + 3",
@@ -228,7 +228,7 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Tests syntax for literals
-	 * @covers literal numbers, fractions, text, tables and closures
+	 * covers literal numbers, fractions, text, tables and closures
 	 */
 	public void testLiteralGrammar() {
 		testParse("-12345",
@@ -251,7 +251,7 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Tests syntax for variable arguments and splicing
-	 * @covers variable arguments, parameters and spliced tables
+	 * covers variable arguments, parameters and spliced tables
 	 */
 	public void testSplice() {
 		testParse("def f(x,@y) { 1 }",
@@ -272,9 +272,9 @@ public class ATParserTest extends TestCase {
 
 	/**
 	 * Tests grammar support for message sends. 
-	 * @covers selection invocation exp
-	 * @covers canonical send invocation exp
-	 * @covers keywordlist send invocation exp 
+	 * covers selection invocation exp
+	 * covers canonical send invocation exp
+	 * covers keywordlist send invocation exp 
 	 */
 	public void testMessageSending() {
 	    testParse(
@@ -297,9 +297,9 @@ public class ATParserTest extends TestCase {
 	/**
 	 * Tests grammar support for currying invocations - e.g. following references
 	 * with an arbitrary amount of send expressions.
-	 * @covers table
-	 * @covers tabulation send exp
-	 * @covers canonical application
+	 * covers table
+	 * covers tabulation send exp
+	 * covers canonical application
 	 */
 	public void testCurrying() {
 	    testParse(
@@ -314,7 +314,6 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Test default behaviour for trailing keywords, and tests with correct nesting.
-	 * @covers keywordlist application
 	 */
 	public void testTrailingKeywords() {
 	    testParse(
@@ -327,7 +326,6 @@ public class ATParserTest extends TestCase {
 	
 	/**
 	 * Test the syntax of optional arguments.
-	 * @covers keywordlist application
 	 */
 	public void testOptionalArgs() {
 	    testParse("def foo(x := 5) { 1 }",
@@ -337,11 +335,25 @@ public class ATParserTest extends TestCase {
 	    testParse("def foo(x := #5) { 1 }",
 		          "(begin (define-function (apply (symbol foo) (table (var-set (symbol x) (unquote (number 5))))) (begin (number 1))))");
 	}
+	
+	/**
+	 * Test the syntax of annotations on message sends.
+	 */
+	public void testAnnotations() {
+	    testParse("o.m(1)@x",
+	    		  "(begin (send (symbol o) (message (apply (symbol m) (table (number1))) (symbol x))))");
+	    testParse("o^m(1)@x",
+		          "(begin (send (symbol o) (delegate (apply (symbol m) (table (number1))) (symbol x))))");
+	    testParse("o<-m(1)@x",
+		          "(begin (send (symbol o) (async-message (apply (symbol m) (table (number1))) (symbol x))))");
+	    testParse("o.m(1)@[x,y]",
+		          "(begin (send (symbol o) (message (apply (symbol m) (table (number1))) (table (symbol x) (symbol y)))))");
+	}
 
 	/**
 	 * Tests the definition of a prototype point object.
-	 * @covers definition
-	 * @covers assignment
+	 * covers definition
+	 * covers assignment
 	 */
 	public void testPointDefinition() {
 		testParse(
