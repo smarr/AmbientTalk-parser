@@ -75,7 +75,7 @@ public class NATParser extends NATByCopy {
 
 				// Traverse the tree created by the parser
 				TreeWalkerImpl walker = new TreeWalkerImpl();
-				return walker.program(t);	
+				return walker.program(t);
 			} catch(RecognitionException e) {
 				source.reset();
 				throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);

@@ -45,11 +45,13 @@ public class ATWalkerTest extends TestCase {
 		testWalker("def x := 5");
 		testWalker("def o.x", "def o.x := nil");
 		testWalker("def o.x := 5");
+		testWalker("def self.x := 5");
 		testWalker("def f(a,b)", "def f(a,b) { nil }");
 		testWalker("def f(a,b) { 5 }");
 		testWalker("def foo: x bar: y", "def foo:bar:(x,y) { nil }");
 		testWalker("def foo: x bar: y { 5 }", "def foo:bar:(x,y) { 5 }");
 		testWalker("def o.f(a,b)", "def o.f(a,b) { nil }");
+		testWalker("def self.f(a,b)", "def self.f(a,b) { nil }");
 		testWalker("def o.f(a,b) { 5 }");
 		testWalker("def o.foo: x bar: y", "def o.foo:bar:(x,y) { nil }");
 		testWalker("def o.foo: x bar: y { 5 }", "def o.foo:bar:(x,y) { 5 }");

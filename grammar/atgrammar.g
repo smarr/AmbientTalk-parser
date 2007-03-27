@@ -83,8 +83,8 @@ definition!: nam:variable val:valueDefinition { #definition = #([AGDEFFIELD,"def
            | inv:signature bdy:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
            | tbl:variable LBR siz:expression RBR init:methodBodyDefinition { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
            | par:parametertable vls:valueDefinition { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
-           | (variable DOT signature) => rcv:variable DOT mth:signature imp:methodBodyDefinition { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, mth, imp); }
-           | rcvr:variable DOT name:variable valu:valueDefinition { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, name, valu); }
+           | ((variable|pseudovariable) DOT signature) => (rcv:variable|pseudo:pseudovariable) DOT mth:signature imp:methodBodyDefinition { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, pseudo, mth, imp); }
+           | (rcvr:variable|slf:pseudovariable) DOT name:variable valu:valueDefinition { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, slf, name, valu); }
            ;
 // allows definitions which are supposedly followed by a := sign and an expression to associate
 // no value with the defined value, this value is then filled in by the treewalker to be nil

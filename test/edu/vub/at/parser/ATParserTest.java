@@ -83,6 +83,8 @@ public class ATParserTest extends TestCase {
 				 "(begin (define-external-field (symbol o) (symbol x)))");
 		testParse("def o.x := 5",
 		          "(begin (define-external-field (symbol o) (symbol x) (number 5)))");
+		testParse("def self.x := 5",
+                  "(begin (define-external-field self (symbol x) (number 5)))");
 		testParse("def f(a,b)",
 				 "(begin (define-function (apply (symbol f) (table (symbol a) (symbol b)))))");
 		testParse("def f(a,b) { 5 }",
@@ -93,6 +95,8 @@ public class ATParserTest extends TestCase {
 				 "(begin (define-function (apply (symbol foo:bar:) (table (symbol x) (symbol y))) (begin (number 5))))");
 		testParse("def o.f(a,b)",
 				 "(begin (define-external-method (symbol o) (apply (symbol f) (table (symbol a) (symbol b)))))");
+		testParse("def self.f(a,b)",
+		          "(begin (define-external-method self (apply (symbol f) (table (symbol a) (symbol b)))))");
 		testParse("def o.f(a,b) { 5 }",
 		          "(begin (define-external-method (symbol o) (apply (symbol f) (table (symbol a) (symbol b))) (begin (number 5))))");
 		testParse("def o.foo: x bar: y",
@@ -168,6 +172,8 @@ public class ATParserTest extends TestCase {
                   "(begin (table-get (apply (symbol f) (table)) (+ (symbol a) (symbol b))))");
 		testParse("a",
                    "(begin (symbol a))");
+		testParse("self",
+                  "(begin self)");
 	}
 	
 	public void testQuasiquoting() {
