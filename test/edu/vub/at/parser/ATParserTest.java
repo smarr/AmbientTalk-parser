@@ -49,7 +49,10 @@ public class ATParserTest extends TestCase {
 
 			CommonAST parseTree = (CommonAST)parser.getAST();
 			System.out.println(parseTree.toStringList());
-			assertEquals((expectedOutput).replaceAll("\\s", ""), parseTree.toStringList().replaceAll("\\s", ""));
+			
+            // Backport from JDK 1.4 to 1.3
+            assertEquals(ATWalkerTest.replaceAll(expectedOutput, "\\s", ""), ATWalkerTest.replaceAll(parseTree.toStringList(), "\\s", ""));
+			//assertEquals((expectedOutput).replaceAll("\\s", ""), parseTree.toStringList().replaceAll("\\s", ""));
 		} catch(Exception e) {
 			fail("Exception: "+e); 
 		}
