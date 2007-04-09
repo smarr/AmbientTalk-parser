@@ -214,20 +214,21 @@ unary! : (operator (LPR|LBR|DOT|ARW|USD)) => var:operator { #unary = #var; }
 quotation: (options { generateAmbigWarnings=false; } :
              statementquotation
            |! k:keywordsymbol { #quotation = #([AGQUO,"quote"],k); }
-           | invocationquotation);
+           | operandquotation);
 
-statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
+//statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
+statementquotation!: LBC stmts:statementlist { #statementquotation = #([AGQUOBGN,"quote-begin"],#stmts); };
 // we need special rules for parsing quotations of keywords like `foo: and `foo:bar:
 keywordsymbol!: ksm:KEYSYM { #keywordsymbol = #([AGKSM,"symbol"], #ksm); }
               | key:KEY { #keywordsymbol = #([AGKEY,"symbol"], #key); }
               ;
-invocationquotation!: inv:invocation { #invocationquotation = #([AGQUO,"quote"],#inv); };
+operandquotation!: qexp:operand { #operandquotation = #([AGQUO,"quote"],#qexp); };
 
 // An unquotation is an unquoted or unquote-spliced piece of source code
 // #operand
 // #@operand
-unquotation!: uexp:invocation { #unquotation = #([AGUNQ,"unquote"], uexp); }
-            | CAT usexp:invocation { #unquotation = #([AGUQS,"unquote-splice"], usexp); };
+unquotation!: uexp:operand { #unquotation = #([AGUNQ,"unquote"], uexp); }
+            | CAT usexp:operand { #unquotation = #([AGUQS,"unquote-splice"], usexp); };
 
 // Curried invocations eagerly consume all subsequent ( [ . tokens. If such tokens are
 // available a single invocation is parsed passing on the received functor (which will
@@ -385,6 +386,7 @@ protected AGSYM     : "symbol";        // AGSymbol(TXT nam)
 protected AGSLF     : "self";          // AGSelf
 //protected AGSUP     : "super";         // AGSuper
 protected AGQUO     : "quote";         // AGQuote(STMT stmt)
+protected AGQUOBEGIN: "quote-begin";   // AGQuote(BGN stmts)
 protected AGUNQ     : "unquote";       // AGUnquote(EXP exp)
 protected AGUQS     : "unquote-splice";// AGUnquoteSplice(EXP exp)
 protected AGSPL     : "splice";        // AGSplice(EXP exp)
@@ -674,7 +676,8 @@ expression returns [ATExpression exp] throws InterpreterException
           | #(AGAPL rcv=expression arg=table) { exp = new AGApplication(rcv, arg); }
           | #(AGSEL rcv=expression sel=symbol) { exp = new AGSelection(rcv, sel); }
           | #(AGTBL rcv=expression idx=expression) { exp = new AGTabulation(rcv, idx); }
-          | #(AGQUO qstmt=statement) { exp = new AGQuote(qstmt); }
+          | #(AGQUO qexp=expression) { exp = new AGQuote(qexp); }
+          | #(AGQUOBGN qstmt=begin) { exp = new AGQuote(qstmt); }
           | #(AGUNQ qexp=expression) { exp = new AGUnquote(qexp); }
           | #(AGUQS qexp=expression) { exp = new AGUnquoteSplice(qexp); }
           | #(AGSPL qexp=expression) { exp = new AGSplice(qexp); }

@@ -124,9 +124,10 @@ public class ATWalkerTest extends TestCase {
 		testWalker("`(t[a].+(1))");
 		testWalker("#(t[a].+(1))");
 		testWalker("#@(t[a].+(1))");
-		testWalker("`t[a] + 1", "`(t[a]).+(1)");
-		testWalker("#t[a] + 1", "#(t[a]).+(1)");
-		testWalker("#@t[a] + 1", "#@(t[a]).+(1)");
+		testWalker("`t[a] + 1", "`(t)[a].+(1)");
+		testWalker("`(t[a]) + 1", "`(t[a]).+(1)");
+		testWalker("#t[a] + 1", "#(t)[a].+(1)");
+		testWalker("#@t[a] + 1", "#@(t)[a].+(1)");
 		testWalker("`{ def x := 5 }", "`( def x := 5 )");
 		testWalker("`({ def x := 5 })");
 		testWalker("`foo:","`(foo:)");

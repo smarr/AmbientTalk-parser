@@ -187,19 +187,27 @@ public class ATParserTest extends TestCase {
         testParse("#@(t[a] + 1)",
                    "(begin (unquote-splice (+ (table-get (symbol t) (symbol a)) (number 1))))");
  		testParse("`t[a] + 1",
- 				  "(begin (+ (quote (table-get (symbol t) (symbol a))) (number 1)))");
+ 				  "(begin (+ (table-get (quote (symbol t)) (symbol a)) (number 1)))");
+ 		testParse("`(t[a]) + 1",
+		          "(begin (+ (quote (table-get (symbol t) (symbol a))) (number 1)))");
  		testParse("#t[a] + 1",
- 				  "(begin (+ (unquote (table-get (symbol t) (symbol a))) (number 1)))");
- 		testParse("#@t[a] + 1",
+ 				  "(begin (+ (table-get (unquote (symbol t)) (symbol a)) (number 1)))");
+ 		testParse("#(t[a]) + 1",
+		          "(begin (+ (unquote (table-get (symbol t) (symbol a))) (number 1)))");
+ 		testParse("#@(t[a]) + 1",
  				  "(begin (+ (unquote-splice (table-get (symbol t) (symbol a))) (number 1)))");   
  		testParse("`{ def x := 5 }",
-		          "(begin (quote (define-field (symbol x) (number 5))))");
+		          "(begin (quote-begin (begin (define-field (symbol x) (number 5)))))");
  		testParse("`({ def x := 5 })",
                    "(begin (quote (closure (table) (begin (define-field (symbol x) (number 5))))))");
  		testParse("`foo:",
                   "(begin (quote (symbol foo:)))");
  		testParse("`foo:bar:",
                   "(begin (quote (symbol foo:bar:)))");
+ 		testParse("`#name.m()",
+                  "(begin (send (quote (unquote (symbol name))) (message (apply (symbol m) (table)))))");
+ 		testParse("`#(name.m())",
+                  "(begin (quote (unquote (send (symbol name) (message (apply (symbol m) (table)))))))");
 	}
 	
 	/**
