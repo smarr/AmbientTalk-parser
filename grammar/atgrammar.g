@@ -441,7 +441,7 @@ protected FRC: NBR (SCALE | DOT NBR (SCALE)?)
 	;
 	
 NBR_OR_FRC options { paraphrase = "a number or fraction"; }: ( NBR EXPONENT ) => FRC  { $setType(FRC); }
-          | ( NBR DOT ) => FRC       { $setType(FRC); }
+          | ( NBR DOT NBR ) => FRC       { $setType(FRC); }
           |   NBR                    { $setType(NBR); }
     ;
 

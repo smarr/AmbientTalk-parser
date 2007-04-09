@@ -301,6 +301,9 @@ public class ATParserTest extends TestCase {
 	    testParse(
 	    		"o^foo()",
 	    		"(begin (send (symbol o) (delegate (apply (symbol foo) (table)))))");
+	    testParse(
+	    		"11.inc()",
+	    		"(begin (send (number 11) (message (apply (symbol inc) (table)))))");
 	}
 	
 	/**
