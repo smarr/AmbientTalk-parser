@@ -208,6 +208,36 @@ public class ATParserTest extends TestCase {
                   "(begin (send (quote (unquote (symbol name))) (message (apply (symbol m) (table)))))");
  		testParse("`#(name.m())",
                   "(begin (quote (unquote (send (symbol name) (message (apply (symbol m) (table)))))))");
+ 		testParse("`{ def #(name) }",
+				"(begin (quote-begin (begin (define-field (unquote-symbol (symbol name))))))");
+ 		testParse("`{ def #(name) := value }",
+ 				"(begin (quote-begin (begin (define-field (unquote-symbol (symbol name)) (symbol value)))))");
+ 		testParse("`{ def #(name) ( @args ); }",
+ 				"(begin (quote-begin (begin (define-function (apply (unquote-symbol (symbol name)) (table (splice (symbol args))))))))");
+ 		testParse("`{ def #(name) ( @args ) { system.println(args); }; }",
+ 				"(begin (quote-begin (begin (define-function (apply (unquote-symbol (symbol name)) (table (splice (symbol args)))) (begin (send (symbol system) (message (apply (symbol println) (table (symbol args))))))))))");
+ 		testParse("`{ def key: #(name) word: args; }",
+ 				"(begin (quote-begin (begin (define-function (apply (symbolkey:word:) (table (unquote-symbol (symbol name)) (symbol args)))))))");
+ 		testParse("`{ def #(name) [ 5 ] }",
+ 				"(begin (quote-begin (begin (define-table (unquote-symbol (symbol name)) (number 5)))))");
+ 		testParse("`{ def #(name) [ 5 ] { random(); } }",
+ 				"(begin (quote-begin (begin (define-table (unquote-symbol (symbol name)) (number 5) (begin (apply (symbol random) (table)))))))");
+ 		testParse("`{ def [ #(name), cancel ]; }",
+ 				"(begin (quote-begin (begin (multi-def (table (unquote-symbol (symbol name)) (symbol cancel))))))");
+ 		testParse("`{ def [ #(name), cancel ] := [ true, false ]; }",
+ 				"(begin (quote-begin (begin (multi-def (table (unquote-symbol (symbol name)) (symbol cancel)) (table (symbol true) (symbol false))))))");
+ 		testParse("`{ def #(object) . #(name) }",
+ 				"(begin (quote-begin (begin (define-external-field (unquote-symbol (symbol object)) (unquote-symbol (symbol name))))))");
+ 		testParse("`{ def #(object) . #(name) ( @args ); }",
+ 				"(begin (quote-begin (begin (define-external-method (unquote-symbol (symbol object)) (apply (unquote-symbol (symbol name)) (table (splice (symbol args))))))))");
+ 		testParse("`{ #(name) ( @args ); }",
+ 				"(begin (quote-begin (begin (apply (unquote (symbol name)) (table (splice (symbol args)))))))");
+ 		testParse("`{ #(receiver) .  #(name) ( @args ); }",
+				"(begin (quote-begin (begin (send (unquote (symbol receiver)) (message (apply (unquote-symbol (symbol name))(table (splice (symbol args)))))))))");
+ 		testParse("`{ #(receiver) ^  #(name) ( @args ); }",
+				"(begin (quote-begin (begin (send (unquote (symbol receiver)) (delegate (apply (unquote-symbol (symbol name)) (table (splice (symbol args)))))))))");
+ 		testParse("`{ #(receiver) <- #(name) ( @args ); }",
+ 				"(begin (quote-begin (begin (send (unquote (symbol receiver)) (async-message (apply (unquote-symbol (symbol name)) (table (splice (symbol args)))))))))");
 	}
 	
 	/**

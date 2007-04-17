@@ -68,24 +68,56 @@ morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
                          ;
 
 // Statements can be either definitions assignments or ordinary expressions
-statement: ("def"! definition)
-         | ("defstripe"! stripedefinition)
-         | ("import"! importstatement)
-         | (variable EQL) => varassignment
-         | (assignment) => assignment
-         | expression;
+statement:  ("def"! definition)
+         |! ("defstripe"! nam:variable sdef:stripedefinition[#nam] { #statement = #sdef; })
+         |  ("import"! importstatement)
+         |  (variable EQL) => varassignment
+         |  (assignment) => assignment
+         |  expression;
 
-// Definitions start with ambienttalk/2's only reserved word def (or defstripe)
-// def <name> := <expression> defines a variable which can be assigned later.
-// def <apl> { <body> } defines an immutable function.
-// def <name>[size-exp] { <init-expression> } defines and initializes a new table of a given size
-definition!: nam:variable val:valueDefinition { #definition = #([AGDEFFIELD,"define-field"], nam, val); }
-           | inv:signature bdy:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], inv, bdy); }
-           | tbl:variable LBR siz:expression RBR init:methodBodyDefinition { #definition = #([AGDEFTABLE,"define-table"], tbl, siz, init); }
-           | par:parametertable vls:valueDefinition { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
-           | ((variable|pseudovariable) DOT signature) => (rcv:variable|pseudo:pseudovariable) DOT mth:signature imp:methodBodyDefinition { #definition = #([AGDEFEXTMTH,"define-external-method"], rcv, pseudo, mth, imp); }
-           | (rcvr:variable|slf:pseudovariable) DOT name:variable valu:valueDefinition { #definition = #([AGDEFEXTFLD,"define-external-field"], rcvr, slf, name, valu); }
-           ;
+// A definition can conceptually fall into to following categories, for which the rules were expanded to avoid non-determinism 
+// Field Definitions:      def name                        (:= fieldValue)?
+// Keyworded Definitions:  def keyword: arg1 another: arg2 ({ bodyExpression })?
+// Canonical Definitions:  def name(arg1, arg2)            ({ bodyExpression })?
+// Multivalue Definitions: def [name1, name2]              (:= [value1, value2])?
+// Table Definitions:      def name[ indexExpression ]     ({ initialisationExpression })?
+// External Definitions:   def receiver.name				(:= fieldValue)?
+//                         def receiver.name(arg1, arg2)   ({ bodyExpression })?
+//                         def receiver.key: arg1          ({ bodyExpression })?
+// ----------------------------------------------------------------------------------------------
+// Unfortunately all of the names in the rules presented above can also contain unquotations of 
+// the form #( expression ) which requires an indefinite lookahead to distinguish between e.g. a
+// field and a method definition. Therefore the rules which start with "def name" we delay the
+// further dispatch to the rule variable_or_method. 
+// NOTE: the pseudovariable self cannot be defined directly but it can be used as a receiver for
+// external definitions, a fact which is reflected by the last case in this rule. 
+definition!	: par:parametertable vls:valueDefinition { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
+			| sig:keywordparameterlist bod:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], sig, bod);}
+			| nam:variable vom:variable_or_method[#nam] { #definition = #vom; }
+			| pse:pseudovariable DOT ext:external_definition[#pse] { #definition = #ext; }
+			;
+
+// When reading a definition which starts with a name, what follows can be the definition of a 
+// canonical method, a field or an external definition. The former two are handled in this rule.
+// for the latter a similar problem occurs to distinguish between canonical methods and fields
+// (i.e. the lookahead to identify the "(" is undefined), hence this responsibility is delegated
+// the external_definition rule
+variable_or_method![AST nam]
+			: val:valueDefinition { #variable_or_method = #([AGDEFFIELD,"define-field"], nam, val);}
+			| inv:canonicalparameterlist[#nam] bdy:methodBodyDefinition { #variable_or_method = #([AGDEFFUN,"define-function"], inv, bdy); }
+			| LBR siz:expression RBR init:methodBodyDefinition { #variable_or_method = #([AGDEFTABLE,"define-table"], nam, siz, init); }
+			| DOT ext:external_definition[#nam] { #variable_or_method = #ext; }
+			;
+
+// Parses external definitions on a receiver. These external definitions can involve fields and
+// cononical or keyworded message.
+external_definition![AST rcv]
+			: sig:keywordparameterlist bod:methodBodyDefinition { #external_definition = #([AGDEFEXTMTH,"define-external-method"], rcv, sig, bod); }
+			// Here we use an antlr lookahead expression to avoid using another splicing of a rule.
+			| (variable LPR) => nme:variable inv:canonicalparameterlist[#nme] bdy:methodBodyDefinition { #external_definition = #([AGDEFEXTMTH,"define-external-method"], rcv, inv, bdy); }
+			| nam:variable val:valueDefinition { #external_definition = #([AGDEFEXTFLD,"define-external-field"], rcv, nam, val); }
+			;
+
 // allows definitions which are supposedly followed by a := sign and an expression to associate
 // no value with the defined value, this value is then filled in by the treewalker to be nil
 valueDefinition!
@@ -106,8 +138,9 @@ methodBodyDefinition!
 
 // def stripename;  is parsed into the intermediary representation as (define-stripe (symbol name) (table))
 // i.e. the second argument to define-stripe is an empty table
-stripedefinition!: nam:variable { #stripedefinition = #([AGDEFSTRIPE,"define-stripe"], nam, #([AGTAB,"table"], #([COM]) )); }
-                 | nme:variable SST parents:commalist { #stripedefinition = #([AGDEFSTRIPE, "define-stripe"], nme, parents); }
+stripedefinition![AST nam]
+				: { #stripedefinition = #([AGDEFSTRIPE,"define-stripe"], nam, #([AGTAB,"table"], #([COM]) )); }
+                 |  SST parents:commalist { #stripedefinition = #([AGDEFSTRIPE, "define-stripe"], nam, parents); }
                  ;
 
 // import host alias { a -> b } exclude { c, d};  is parsed into the intermediary representation
@@ -131,12 +164,8 @@ excludelist: "exclude"! importname (COM! importname)* { #excludelist = #([AGTAB,
 importname : keywordsymbol | variable
            ;
 
-// A function signature can either be a canonical parameter list of the form <fun(a,b,c)>
-// or a keyworded list of the form <foo: a bar: b>
-signature: canonicalparameterlist
-         | keywordparameterlist;
-
-canonicalparameterlist!: var:variable LPR pars:parameterlist RPR { #canonicalparameterlist = #([AGAPL,"apply"], var, pars); }; 
+// A function definition can include a canonical parameter list of the form <(a,b,c)>
+canonicalparameterlist![AST var]: LPR pars:parameterlist RPR { #canonicalparameterlist = #([AGAPL,"apply"], var, pars); }; 
 
 // See the documentation at the keywordlist rule for more information. The difference between
 // keywordparameterlist and keywordlist lies in the ability to either parse a varlist or a commalist.
@@ -322,16 +351,15 @@ argument:! CAT exp:expression { #argument = #([AGSPL,"splice"], exp); }
 parameterlist: parameter (COM! parameter)* { #parameterlist = #([AGTAB, "table"], #parameterlist); }
             |! /* empty */ { #parameterlist = #([AGTAB,"table"], #([COM])); };
 
-parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:expression { #parameter = #([AGASSVAR, "var-set"], var, exp); }
-          | vq:variable_or_quotation { #parameter = #vq; }
-          | CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
-
-variable_or_quotation: variable
-                     | HSH! unquotation;
+parameter!: (variable EQL) => var:variable EQL exp:expression { #parameter = #([AGASSVAR, "var-set"], var, exp); }
+          | vq:variable { #parameter = #vq; }
+          | CAT v:variable { #parameter = #([AGSPL,"splice"], v); };
 
 // user-definable names for variables
-variable: symbol
-        | operator;
+variable:  symbol
+        |  operator
+        |! HSH! uexp:operand { #variable = #([AGUSM,"unquote-symbol"], uexp); }
+        ;
          
 symbol!: var:NAM { #symbol = #([AGSYM,"symbol"], var); };
          
@@ -388,6 +416,7 @@ protected AGSLF     : "self";          // AGSelf
 protected AGQUO     : "quote";         // AGQuote(STMT stmt)
 protected AGQUOBEGIN: "quote-begin";   // AGQuote(BGN stmts)
 protected AGUNQ     : "unquote";       // AGUnquote(EXP exp)
+protected AGUSM     : "unquote-symbol";// AGUnquoteSymbol(EXP exp)
 protected AGUQS     : "unquote-splice";// AGUnquoteSplice(EXP exp)
 protected AGSPL     : "splice";        // AGSplice(EXP exp)
 // Literals
@@ -591,6 +620,7 @@ protected ESC
 	;
 	
 { import edu.vub.at.objects.ATObject;
+  import edu.vub.at.objects.ATAbstractGrammar;
   import edu.vub.at.objects.natives.*;
   import edu.vub.at.objects.grammar.*;
   import edu.vub.at.objects.natives.grammar.*;
@@ -717,7 +747,7 @@ literal returns[ATExpression lit] throws InterpreterException
           | #(AGCLO par=params body=begin) { lit = new AGClosureLiteral(par, body); }
           ;
           
-symbol returns [AGSymbol sym] throws InterpreterException { sym = null; }
+symbol returns [ATSymbol sym] throws InterpreterException { sym = null; ATExpression exp = null; }
           : #(AGSYM txt:NAM) { sym = AGSymbol.alloc(NATText.atValue(txt.getText())); }
           | #(AGKEY key:KEY) { sym = AGSymbol.alloc(NATText.atValue(key.getText())); }
           | #(AGKSM ksm:KEYSYM) { sym = AGSymbol.alloc(NATText.atValue(ksm.getText())); }
@@ -726,11 +756,12 @@ symbol returns [AGSymbol sym] throws InterpreterException { sym = null; }
           | #(AGMUL mul:MUL) { sym = AGSymbol.alloc(NATText.atValue(mul.getText())); }
           | #(AGPOW pow:POW) { sym = AGSymbol.alloc(NATText.atValue(pow.getText())); }
           | AGSLF { sym = AGSelf._INSTANCE_; }
+          | #(AGUSM exp=expression) { sym = new AGUnquoteSymbol(exp); }
           ;
 
-param returns [NATAbstractGrammar ag] throws InterpreterException
+param returns [ATAbstractGrammar ag] throws InterpreterException
   { ag = null;
-  	AGSymbol nam; ATExpression exp; }
+  	ATSymbol nam; ATExpression exp; }
           : #(AGASSVAR nam=symbol exp=expression) { ag = new AGAssignVariable(nam, exp); }
 		  | ag=symbol
 		  | #(AGUNQ exp=expression) { ag = new AGUnquote(exp); }
@@ -756,7 +787,7 @@ begin returns [AGBegin bgn] throws InterpreterException
           
 params returns [NATTable par] throws InterpreterException
   { par = null;
-  	NATAbstractGrammar formal;
+  	ATAbstractGrammar formal;
   	LinkedList list = new LinkedList(); }
           : #(AGTAB (formal=param { list.add(formal); })* )
               { par = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); }

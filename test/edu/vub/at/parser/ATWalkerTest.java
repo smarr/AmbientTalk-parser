@@ -132,6 +132,22 @@ public class ATWalkerTest extends TestCase {
 		testWalker("`({ def x := 5 })");
 		testWalker("`foo:","`(foo:)");
 		testWalker("`foo:bar:","`(foo:bar:)");
+		testWalker("`{ def #(name) }", "`(def #(name) := nil)");
+ 		testWalker("`{ def #(name) := value }", "`( def #(name) := value )");
+ 		testWalker("`{ def #(name) ( @args ); }", "`( def #(name) ( @args ) { nil } )");
+ 		testWalker("`{ def #(name) ( @args ) { system.println(args); }; }", "`( def #(name) ( @args ) { system.println(args) } )");
+ 		testWalker("`{ def key: #(name) word: args; }", "`(def key:word: ( #(name), args ) { nil } )");
+ 		testWalker("`{ def #(name) [ 5 ] }", "`( def #(name) [ 5 ] { nil } )");
+ 		testWalker("`{ def #(name) [ 5 ] { random(); } }", "`( def #(name) [ 5 ] { random() } )");
+// 		testWalker("`{ def [ #(name), cancel ]; }", "`( def [ #(name), cancel ] := [ nil, nil ] )");
+// 		testWalker("`{ def [ #(name), cancel ] := [ true, false ]; }", "`( def [ #(name), cancel ] := [ true, false ]; )");
+ 		testWalker("`{ def #(object) . #(name) }", "`(def #(object) . #(name) := nil )");
+ 		testWalker("`{ def #(object) . #(name) ( @args ); }", "`(def #(object) . #(name) ( @args ) { nil } )");
+ 		testWalker("`{ #(name) ( @args ); }", "`( #(name) ( @args ))");
+ 		testWalker("`{ #(receiver) .  #(name) ( @args ); }", "`( #(receiver) .  #(name) ( @args ))");
+ 		testWalker("`{ #(receiver) ^  #(name) ( @args ); }", "`( #(receiver) ^  #(name) ( @args ))");
+ 		testWalker("`{ #(receiver) <- #(name) ( @args ); }", "`( #(receiver) <- #(name) ( @args ))");
+
 	}
 	
 	public void testOperatorGrammar() {
