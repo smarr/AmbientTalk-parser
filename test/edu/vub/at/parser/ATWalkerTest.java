@@ -147,7 +147,7 @@ public class ATWalkerTest extends TestCase {
  		testWalker("`{ #(receiver) .  #(name) ( @args ); }", "`( #(receiver) .  #(name) ( @args ))");
  		testWalker("`{ #(receiver) ^  #(name) ( @args ); }", "`( #(receiver) ^  #(name) ( @args ))");
  		testWalker("`{ #(receiver) <- #(name) ( @args ); }", "`( #(receiver) <- #(name) ( @args ))");
-
+        testWalker("`{ def foo(#@(`([a]))) { #@([1]) }}", "def foo(a) { 1 }");
 	}
 	
 	public void testOperatorGrammar() {

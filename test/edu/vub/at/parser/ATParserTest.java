@@ -238,6 +238,8 @@ public class ATParserTest extends TestCase {
 				"(begin (quote-begin (begin (send (unquote (symbol receiver)) (delegate (apply (unquote-symbol (symbol name)) (table (splice (symbol args)))))))))");
  		testParse("`{ #(receiver) <- #(name) ( @args ); }",
  				"(begin (quote-begin (begin (send (unquote (symbol receiver)) (async-message (apply (unquote-symbol (symbol name)) (table (splice (symbol args)))))))))");
+ 		testParse("`{ def foo(#@(`([a]))) { #@([1]) }}",
+ 				  "(begin (quote-begin (begin (define-function (apply (symbol foo) (table (unquote-splice (table (symbol a))))) (begin (unquote-splice (table (number 1))))))))");
 	}
 	
 	/**
