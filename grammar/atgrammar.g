@@ -351,9 +351,12 @@ argument:! CAT exp:expression { #argument = #([AGSPL,"splice"], exp); }
 parameterlist: parameter (COM! parameter)* { #parameterlist = #([AGTAB, "table"], #parameterlist); }
             |! /* empty */ { #parameterlist = #([AGTAB,"table"], #([COM])); };
 
-parameter!: (variable EQL) => var:variable EQL exp:expression { #parameter = #([AGASSVAR, "var-set"], var, exp); }
-          | vq:variable { #parameter = #vq; }
-          | CAT v:variable { #parameter = #([AGSPL,"splice"], v); };
+parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:expression { #parameter = #([AGASSVAR, "var-set"], var, exp); }
+          | vq:variable_or_quotation { #parameter = #vq; }
+          | CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
+
+variable_or_quotation: (HSH) => HSH! unquotation
+                     | variable;
 
 // user-definable names for variables
 variable:  symbol
@@ -548,7 +551,7 @@ CMP_OR_ARW options { paraphrase = "a comparator, asynchronous or universal send"
           |   CMP            { $setType(CMP); }
           ;
 
-TXT options { paraphrase = "a text string"; }: '"' (ESC|~('"'|'\\'|'\n'|'\r'))* '"'
+TXT options { paraphrase = "a text string"; }: '"' (ESC|~('"'|'\\'))* '"'
 	;
 
 // Single-line comments
@@ -588,14 +591,14 @@ ML_COMMENT options { paraphrase = "a multi-line comment"; }
 	
 protected ESC
 	:	'\\'
-		(	'n'
-		|	'r'
-		|	't'
-		|	'b'
-		|	'f'
-		|	'"'
-		|	'\''
-		|	'\\'
+		(	'n'  { $setText("\n"); }
+		|	'r'  { $setText("\r"); }
+		|	't'  { $setText("\t"); }
+		|	'b'  { $setText("\b"); }
+		|	'f'  { $setText("\f"); }
+		|	'"'  { $setText("\""); }
+		|	'\'' { $setText("\'"); }
+		|	'\\' { $setText("\\"); }
 		|	'0'..'3'
 			(
 				options {
