@@ -147,7 +147,7 @@ public class ATWalkerTest extends TestCase {
  		testWalker("`{ #(receiver) .  #(name) ( @args ); }", "`( #(receiver) .  #(name) ( @args ))");
  		testWalker("`{ #(receiver) ^  #(name) ( @args ); }", "`( #(receiver) ^  #(name) ( @args ))");
  		testWalker("`{ #(receiver) <- #(name) ( @args ); }", "`( #(receiver) <- #(name) ( @args ))");
-        testWalker("`{ def foo(#@(`([a]))) { #@([1]) }}", "def foo(a) { 1 }");
+        testWalker("`{ def foo(#@(`([a]))) { #@([1]) }}", "`(def foo (#@( `([a]) )) { #@([1]) })");
 	}
 	
 	public void testOperatorGrammar() {
@@ -170,7 +170,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("-12345","-(12345)");
 		testWalker("1.05");
 		testWalker("-5.04e-10","-(5.04E-10)");
-		testWalker("\"hello  \\tworld\"");
+		testWalker("\"hello  \\tworld\"", "\"hello \tworld\"");
 		testWalker("[a,b,c]");
 		testWalker("[]");
 		testWalker("{ | x, y | x.+(y) }");
