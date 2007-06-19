@@ -69,7 +69,7 @@ morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
 
 // Statements can be either definitions assignments or ordinary expressions
 statement:  ("def"! definition)
-         |! ("defstripe"! nam:variable sdef:stripedefinition[#nam] { #statement = #sdef; })
+         |! ("deftype"! nam:variable sdef:typedefinition[#nam] { #statement = #sdef; })
          |  ("import"! importstatement)
          |  (variable EQL) => varassignment
          |  (assignment) => assignment
@@ -136,11 +136,11 @@ methodBodyDefinition!
 			| LBC bdy:statementlist { #methodBodyDefinition = #bdy; }
 			;
 
-// def stripename;  is parsed into the intermediary representation as (define-stripe (symbol name) (table))
-// i.e. the second argument to define-stripe is an empty table
-stripedefinition![AST nam]
-				: { #stripedefinition = #([AGDEFSTRIPE,"define-stripe"], nam, #([AGTAB,"table"], #([COM]) )); }
-                 |  SST parents:commalist { #stripedefinition = #([AGDEFSTRIPE, "define-stripe"], nam, parents); }
+// def typename;  is parsed into the intermediary representation as (define-type (symbol name) (table))
+// i.e. the second argument to define-type is an empty table
+typedefinition![AST nam]
+				: { #typedefinition = #([AGDEFTYPE,"define-type"], nam, #([AGTAB,"table"], #([COM]) )); }
+                 |  SST parents:commalist { #typedefinition = #([AGDEFTYPE, "define-type"], nam, parents); }
                  ;
 
 // import host alias { a -> b } exclude { c, d};  is parsed into the intermediary representation
@@ -396,7 +396,7 @@ protected AGDEFFUN  : "define-function";// AGDefFunction(SYM sel, TAB arg, BGN b
 protected AGDEFTABLE: "define-table";  // AGDefTable(SYM tbl, EXP siz, EXP ini)
 protected AGDEFEXTMTH: "define-external-method";// AGDefExternalMethod(SYM rcv, SYM sel, TAB arg, BGN bdy)
 protected AGDEFEXTFLD: "define-external-field"; // AGDefExternalField(SYM rcv, SYM nam, EXP val)
-protected AGDEFSTRIPE: "define-stripe"; // AGDefStripe(SYM nam, TAB parentExps)
+protected AGDEFTYPE: "define-type"; // AGDefType(SYM nam, TAB parentExps)
 protected AGIMPORT: "import"; // AGImport(EXP host, TAB aliases, TAB excludes)
 protected AGMULTIDEF: "multi-def";     // AGMultiDefinition(TAB par, EXP val)
 // Assignments
@@ -535,7 +535,7 @@ DOT options { paraphrase = "a selection"; }: '.';
 
 protected ARW: "<-"; // asynchronous send operator
 protected USD: "<+"; // universal send operator
-protected SST: "<:"; // substripe
+protected SST: "<:"; // subtype
 
 CAR options { paraphrase = "a delegation"; }: '^';
 PIP options { paraphrase = "a block argument list"; }: '|';
@@ -678,7 +678,7 @@ definition returns [ATDefinition def] throws InterpreterException
             { val= NATTable.ofSize(pars.elements_.length); } 
             (val=expression)? ) 
             { def = new AGMultiDefinition(pars,val); }
-          | #(AGDEFSTRIPE nam=symbol pars=table) { def = new AGDefStripe(nam, pars); } // pars = the parent stripes here
+          | #(AGDEFTYPE nam=symbol pars=table) { def = new AGDefType(nam, pars); } // pars = the parent type tags here
           ;
 
 importstmt returns [ATImport imp] throws InterpreterException

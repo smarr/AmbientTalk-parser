@@ -126,12 +126,12 @@ public class ATParserTest extends TestCase {
                   "(begin (multi-set (table (symbol x) (symbol y)) (table (symbol y) (symbol x))))");
 		testParse("[x, y := 1] := a",
                   "(begin (multi-set (table (symbol x) (var-set (symbol y) (number 1))) (symbol a)))");
-		testParse("defstripe foo",
-				  "(begin (define-stripe (symbol foo) (table)))");
-		testParse("defstripe foo <: bar",
-				  "(begin (define-stripe (symbol foo) (table (symbol bar))))");
-		testParse("defstripe foo <: bar, o.x",
-		          "(begin (define-stripe (symbol foo) (table (symbol bar) (select (symbol o) (symbol x)))))");
+		testParse("deftype foo",
+				  "(begin (define-type (symbol foo) (table)))");
+		testParse("deftype foo <: bar",
+				  "(begin (define-type (symbol foo) (table (symbol bar))))");
+		testParse("deftype foo <: bar, o.x",
+		          "(begin (define-type (symbol foo) (table (symbol bar) (select (symbol o) (symbol x)))))");
 		testParse("import o alias a := b, c := d exclude e, f",
 				  "(begin (import (symbol o) (table (table (symbol a) (symbol b)) (table (symbol c) (symbol d))) (table (symbol e) (symbol f))))");
 		testParse("import o.m()",

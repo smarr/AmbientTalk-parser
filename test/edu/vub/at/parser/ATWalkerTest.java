@@ -89,9 +89,9 @@ public class ATWalkerTest extends TestCase {
 		testWalker("o.m := x");
 		testWalker("[x, y] := [y, x]");
 		testWalker("[x, y := 1] := a");
-		testWalker("defstripe foo");
-		testWalker("defstripe foo <: bar");
-		testWalker("defstripe foo <: bar, o.x");
+		testWalker("deftype foo");
+		testWalker("deftype foo <: bar");
+		testWalker("deftype foo <: bar, o.x");
 		testWalker("import o alias a := b, c := d exclude e, f");
 		testWalker("import o.m()");
 		testWalker("import o alias a: := b:c:");
