@@ -91,7 +91,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("[x, y := 1] := a");
 		testWalker("deftype foo");
 		testWalker("deftype foo <: bar");
-		testWalker("deftype foo <: bar, o.x");
+		testWalker("deftype foo <: bar, o.x", "deftype foo <: bar, o.x()");
 		testWalker("import o alias a := b, c := d exclude e, f");
 		testWalker("import o.m()");
 		testWalker("import o alias a: := b:c:");
@@ -106,7 +106,8 @@ public class ATWalkerTest extends TestCase {
 		testWalker("super.m(a)");
 		testWalker("m(a,b)");
 		testWalker("f()");
-		testWalker("o.m");
+		testWalker("o.m","o.m()");
+		testWalker("o.&m");
 		testWalker(".m(a,b)");
 		testWalker("<-m(a,b)");
 		testWalker("^m(a,b)");
@@ -156,14 +157,16 @@ public class ATWalkerTest extends TestCase {
 		testWalker("+(1,2)");
 		testWalker("a.+(2)");
 		testWalker("+.m(1)");
-		testWalker("+.m");
-		testWalker("m.+");
+		testWalker("+.m","+.m()");
+		testWalker("+.&m");
+		testWalker("m.+","m.+()");
+		testWalker("m.&+");
 		testWalker("-1", "-(1)");
 		testWalker("-t[5]","-(t[5])");
 		testWalker("-5 + a", "-(5).+(a)");
 		testWalker("/");
-		testWalker("/.at");
-	    testWalker("~.test");
+		testWalker("/.at","/.at()");
+	    testWalker("~.test","~.test()");
 	}
 	
 	public void testLiteralGrammar() {
@@ -188,8 +191,8 @@ public class ATWalkerTest extends TestCase {
 	}
 	
 	public void testCurriedInvocations() {
-	    testWalker("closures.at(closures.length)()");
-	    testWalker("closures[closures.length]()");
+	    testWalker("closures.at(closures.length)()","closures.at(closures.length())()");
+	    testWalker("closures[closures.length]()","closures[closures.length()]()");
 	}
 	
 	public void testOptionalArgs() {

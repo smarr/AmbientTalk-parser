@@ -183,7 +183,7 @@ varassignment!: var:variable EQL val:expression { #varassignment = #([AGASSVAR, 
 assignment!: (parametertable EQL) => par:parametertable EQL val:expression { #assignment = #([AGMULTIASS,"multi-set"], par, val); }
            | o:operand a:assign_table_or_field[#o] { #assignment = #a; };
 assign_table_or_field![AST functor]: tbl:tabulation[functor] EQL tvl:expression { #assign_table_or_field = #([AGASSTAB,"table-set"], tbl, tvl); }
-                                   | sel:selection[functor]  EQL fvl:expression { #assign_table_or_field = #([AGASSFLD,"field-set"], sel, fvl); };
+                                   | sel:zeroArityInvocation[functor]  EQL fvl:expression { #assign_table_or_field = #([AGASSFLD,"field-set"], sel, fvl); };
 
 // Expressions are split up according to precedence. Ambienttalk/2's keyworded message
 // sends have lowest priority and are therefore the highest applicable rule.
@@ -265,7 +265,7 @@ unquotation!: uexp:operand { #unquotation = #([AGUNQ,"unquote"], uexp); }
 // to be curried even further. When no appropriate tokens are left, the passed functor 
 // is returned.
 curried_invocation![AST functor]:
-      (LPR|LBR|DOT|ARW|USD|CAR) => i:invoke_expression[functor] c:curried_invocation[#i] { #curried_invocation = #c; }
+      (LPR|LBR|DOT|SEL|ARW|USD|CAR) => i:invoke_expression[functor] c:curried_invocation[#i] { #curried_invocation = #c; }
 	| {#curried_invocation = #functor; };
 
 // Invocation expressions are a single curried expression whether to apply, tabulate or
@@ -273,14 +273,25 @@ curried_invocation![AST functor]:
 invoke_expression[AST functor]:
 	 ! LPR args:commalist RPR  { #invoke_expression = #([AGAPL,"apply"], functor, args); }
 	|  tabulation[functor]
+	// o.m(args) -> send(o, msg(apl(m,args)))
 	|! (DOT variable LPR | DOT KEY) => DOT msg:message { #invoke_expression = #([AGSND,"send"], functor, msg); }
+	// o.m -> send(o, msg(apl(m,[])))
+	|  zeroArityInvocation[functor]
+	// o.&m -> select(o,m)
 	|  selection[functor]
+	// o<-msg(args) -> send(o, asyncmsg(apl(msg,args)))
 	|! (ARW variable LPR | ARW KEY) => ARW snd:asyncmessage { #invoke_expression = #([AGSND,"send"], functor, snd); }
+	// o^msg(args) -> send(o, delegation(apl(msg,args)))
 	|! (CAR variable LPR | CAR KEY) => CAR del:delegationmessage { #invoke_expression = #([AGSND,"send"], functor, del); }
+	// o <+ msg -> send(o, msg)
 	|! (USD expression) => USD exp:expression { #invoke_expression = #([AGSND,"send"], functor, #([AGUSD,"univ-message"], exp)); };
 
 tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table-get"], functor, idx); };
-selection![AST functor]: DOT var:variable { #selection = #([AGSEL,"select"], functor, var); };
+selection![AST functor]: SEL var:variable { #selection = #([AGSEL,"select"], functor, var); };
+// transforms o.x into o.x()
+zeroArityInvocation![AST functor]: DOT var:variable {
+	#zeroArityInvocation = #([AGSND,"send"], functor, #([AGMSG,"message"], #([AGAPL,"apply"], var, #([AGTAB,"table"], #([COM])))));
+};
 
 // Function application can be done using two distinct mechanisms, either using a 
 // canonical format ( foobar( a1, a2 ) ) or using keywordlists (foo: a1 bar: a2).
@@ -450,7 +461,7 @@ protected CMPCHAR: ( '<' | '=' | '>' | '~' )
 protected ADDCHAR: ( '+' | '-')
 	;
 	
-protected MULCHAR: ( '*' | '/' | '\\' | '&' )
+protected MULCHAR: ( '*' | '/' | '\\' )
 	;
 	
 protected POWCHAR: ( '!' | '?' | '%' )
@@ -531,7 +542,8 @@ COM options { paraphrase = "a comma"; }: ',';
 SMC options { paraphrase = "a semicolon"; }: ';';
 
 EQL options { paraphrase = "an assignment"; }: ":=";
-DOT options { paraphrase = "a selection"; }: '.';
+DOT options { paraphrase = "a dot"; }: '.';
+SEL options { paraphrase = "a selection"; }: ".&";
 
 protected ARW: "<-"; // asynchronous send operator
 protected USD: "<+"; // universal send operator
@@ -695,7 +707,7 @@ assignment returns [ATAssignment ass] throws InterpreterException
     NATTable par; }
           : #(AGASSVAR nam=symbol val=expression) { ass = new AGAssignVariable(nam, val); }
           | #(AGASSTAB #(AGTBL rcv=expression idx=expression) val=expression) { ass = new AGAssignTable(rcv, idx, val); }
-          | #(AGASSFLD #(AGSEL rcv=expression nam=symbol) val=expression) { ass = new AGAssignField(rcv, nam, val); }
+          | #(AGASSFLD #(AGSND rcv=expression #(AGMSG #(AGAPL nam=symbol par=table))) val=expression) { ass = new AGAssignField(rcv, nam, val); }
           | #(AGMULTIASS par=params val=expression) { ass = new AGMultiAssignment(par, val); }
           ;
 

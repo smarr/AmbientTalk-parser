@@ -121,7 +121,7 @@ public class ATParserTest extends TestCase {
 		testParse("x[5] := 7",
 		          "(begin (table-set (table-get ( symbol x ) ( number 5 ) ) (number 7)))");
 		testParse("o.m := 1",
-                   "(begin (field-set (select (symbol o) (symbol m)) (number 1)))");
+                   "(begin (field-set (send (symbol o) (message (apply (symbol m) (table)))) (number 1)))");
 		testParse("[x, y] := [ y, x]",
                   "(begin (multi-set (table (symbol x) (symbol y)) (table (symbol y) (symbol x))))");
 		testParse("[x, y := 1] := a",
@@ -131,7 +131,7 @@ public class ATParserTest extends TestCase {
 		testParse("deftype foo <: bar",
 				  "(begin (define-type (symbol foo) (table (symbol bar))))");
 		testParse("deftype foo <: bar, o.x",
-		          "(begin (define-type (symbol foo) (table (symbol bar) (select (symbol o) (symbol x)))))");
+		          "(begin (define-type (symbol foo) (table (symbol bar) (send (symbol o) (message (apply (symbol x) (table)))))))");
 		testParse("import o alias a := b, c := d exclude e, f",
 				  "(begin (import (symbol o) (table (table (symbol a) (symbol b)) (table (symbol c) (symbol d))) (table (symbol e) (symbol f))))");
 		testParse("import o.m()",
@@ -162,7 +162,9 @@ public class ATParserTest extends TestCase {
 		testParse("m(a,b)",
 				 "(begin (apply (symbol m) (table (symbol a) (symbol b))))");
 		testParse("o.m",
-		          "(begin (select (symbol o) (symbol m)))");
+		          "(begin (send (symbol o) (message (apply (symbol m) (table)))))");
+		testParse("o.&m",
+                  "(begin (select (symbol o) (symbol m)))");
 		testParse(".m(a,b)",
 				 "(begin (message (apply (symbol m) (table (symbol a) (symbol b)))))");
 		testParse("<-m(a,b)",
@@ -257,9 +259,9 @@ public class ATParserTest extends TestCase {
 	              "(begin (send (symbol a) (message (apply (symbol +) (table (number 2))))))");
 	    testParse("+.m(1)",
                   "(begin (send (symbol +) (message (apply (symbol m) (table (number 1))))))");
-	    testParse("+.m",
+	    testParse("+.&m",
                   "(begin (select (symbol +) (symbol m)))");
-	    testParse("m.+",
+	    testParse("m.&+",
                   "(begin (select (symbol m) (symbol +)))");
 	    testParse("-1",
                   "(begin (apply (symbol -) (table (number 1))))");
@@ -270,9 +272,9 @@ public class ATParserTest extends TestCase {
 	    testParse("/",
 	              "(begin (symbol /))");
 	    testParse("/.at",
-	    		     "(begin (select (symbol /) (symbol at)))");
+	    		     "(begin (send (symbol /) (message (apply (symbol at) (table)))))");
 	    	testParse("~.test",
-	    		     "(begin (select (symbol ~) (symbol test)))");
+	    		     "(begin (send (symbol ~) (message (apply (symbol test) (table)))))");
 	}
 	
 	/**
@@ -327,7 +329,7 @@ public class ATParserTest extends TestCase {
 	 */
 	public void testMessageSending() {
 	    testParse(
-	    		"object.no().demeter().law",
+	    		"object.no().demeter().&law",
 	    		" ( begin ( select ( send ( send (symbol object) (message ( apply (symbol no) (table))) ) (message ( apply (symbol demeter) (table) )) ) (symbol law) ) )");
 	    testParse(
 	    		"object.keyworded: message send: test",
@@ -359,9 +361,12 @@ public class ATParserTest extends TestCase {
 	    		" ( begin ( apply ( table-get ( table ( closure (table ) ( begin ( apply (symbol display:) (table (text \"test\" ) ) ) ) ) ( closure ( table (symbol x) (symbol y) ) ( begin ( < (symbol x) (symbol y) ) ) ) ) (number 2) ) ( table (symbol a) (symbol b) ) ) )");		
 	
 	    testParse("closures.at(closures.length)()",
-	    		     "(begin (apply (send (symbol closures) (message (apply (symbol at) (table (select (symbol closures) (symbol length)))))) (table)))");
+	    		     "(begin (apply (send (symbol closures)" +
+	    		     "                    (message (apply (symbol at)" +
+	    		     "                                    (table (send (symbol closures)" +
+	    		     "                                                 (message (apply (symbol length) (table)))))))) (table)))");
 		testParse("closures[closures.length]()",
-				 "(begin (apply (table-get (symbol closures) (select (symbol closures) (symbol length))) (table)))");
+				 "(begin (apply (table-get (symbol closures) (send (symbol closures) (message (apply (symbol length) (table))))) (table)))");
 	}
 	
 	/**
