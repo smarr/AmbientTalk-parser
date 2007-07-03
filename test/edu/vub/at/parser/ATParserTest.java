@@ -167,6 +167,8 @@ public class ATParserTest extends TestCase {
 		          "(begin (send (symbol o) (message (apply (symbol m) (table)))))");
 		testParse("o.&m",
                   "(begin (select (symbol o) (symbol m)))");
+		testParse("o.&m:=",
+                  "(begin (select (symbol o) (symbol m:=)))");
 		testParse(".m(a,b)",
 				 "(begin (message (apply (symbol m) (table (symbol a) (symbol b)))))");
 		testParse("<-m(a,b)",

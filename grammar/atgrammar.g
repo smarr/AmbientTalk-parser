@@ -291,7 +291,7 @@ invoke_expression[AST functor]:
 	|! (USD expression) => USD exp:expression { #invoke_expression = #([AGSND,"send"], functor, #([AGUSD,"univ-message"], exp)); };
 
 tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table-get"], functor, idx); };
-selection![AST functor]: SEL var:variable { #selection = #([AGSEL,"select"], functor, var); };
+selection![AST functor]: SEL var:variable_or_assignment { #selection = #([AGSEL,"select"], functor, var); };
 // transforms o.x into o.x()
 zeroArityInvocation![AST functor]: DOT var:variable {
 	#zeroArityInvocation = #([AGSND,"send"], functor, #([AGMSG,"message"], #([AGAPL,"apply"], var, #([AGTAB,"table"], #([COM])))));

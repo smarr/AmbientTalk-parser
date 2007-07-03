@@ -109,6 +109,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("f()");
 		testWalker("o.m","o.m()");
 		testWalker("o.&m");
+		testWalker("o.&m:=");
 		testWalker(".m(a,b)");
 		testWalker("<-m(a,b)");
 		testWalker("^m(a,b)");
