@@ -92,6 +92,8 @@ public class ATParserTest extends TestCase {
 				 "(begin (define-function (apply (symbol f) (table (symbol a) (symbol b)))))");
 		testParse("def f(a,b) { 5 }",
 				 "(begin (define-function (apply (symbol f) (table (symbol a) (symbol b))) (begin (number 5))))");
+		testParse("def foo:=(a)",
+		          "(begin (define-function (apply (symbol foo:=) (table (symbol a)))))");
 		testParse("def foo: x bar: y",
 				 "(begin (define-function (apply (symbol foo:bar:) (table (symbol x) (symbol y)))))");
 		testParse("def foo: x bar: y { 5 }",
@@ -206,6 +208,8 @@ public class ATParserTest extends TestCase {
                   "(begin (quote (symbol foo:)))");
  		testParse("`foo:bar:",
                   "(begin (quote (symbol foo:bar:)))");
+ 		testParse("`foo:=",
+                  "(begin (quote (symbol foo:=)))");
  		testParse("`#name.m()",
                   "(begin (send (quote (unquote (symbol name))) (message (apply (symbol m) (table)))))");
  		testParse("`#(name.m())",

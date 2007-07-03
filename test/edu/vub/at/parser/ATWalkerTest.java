@@ -72,6 +72,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("def self.x := 5");
 		testWalker("def f(a,b)", "def f(a,b) { nil }");
 		testWalker("def f(a,b) { 5 }");
+		testWalker("def foo:=(a)", "def foo:=(a) { nil }");
 		testWalker("def foo: x bar: y", "def foo:bar:(x,y) { nil }");
 		testWalker("def foo: x bar: y { 5 }", "def foo:bar:(x,y) { 5 }");
 		testWalker("def o.f(a,b)", "def o.f(a,b) { nil }");
@@ -133,6 +134,7 @@ public class ATWalkerTest extends TestCase {
 		testWalker("`({ def x := 5 })");
 		testWalker("`foo:","`(foo:)");
 		testWalker("`foo:bar:","`(foo:bar:)");
+		testWalker("`foo:=","`(foo:=)");
 		testWalker("`{ def #(name) }", "`(def #(name) := nil)");
  		testWalker("`{ def #(name) := value }", "`( def #(name) := value )");
  		testWalker("`{ def #(name) ( @args ); }", "`( def #(name) ( @args ) { nil } )");

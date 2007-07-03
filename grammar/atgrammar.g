@@ -93,7 +93,7 @@ statement:  ("def"! definition)
 // external definitions, a fact which is reflected by the last case in this rule. 
 definition!	: par:parametertable vls:valueDefinition { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
 			| sig:keywordparameterlist bod:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], sig, bod);}
-			| nam:variable vom:variable_or_method[#nam] { #definition = #vom; }
+			| nam:variable_or_assignment vom:variable_or_method[#nam] { #definition = #vom; }
 			| pse:pseudovariable DOT ext:external_definition[#pse] { #definition = #ext; }
 			;
 
@@ -242,11 +242,15 @@ unary! : (operator (LPR|LBR|DOT|ARW|USD)) => var:operator { #unary = #var; }
 // the rule is ambiguous as `{ x } can both be interpreted as `{ statement } or as `blockliteral
 quotation: (options { generateAmbigWarnings=false; } :
              statementquotation
+           |! fa:fieldAssignment { #quotation = #([AGQUO,"quote"],fa); }
            |! k:keywordsymbol { #quotation = #([AGQUO,"quote"],k); }
            | operandquotation);
 
 //statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
 statementquotation!: LBC stmts:statementlist { #statementquotation = #([AGQUOBGN,"quote-begin"],#stmts); };
+// we need special rules for parsing quotations of field assignment symbols like `foo:=
+fieldAssignment!: fas:ASSNAM { #fieldAssignment = #([AGASY,"symbol"], #fas); }
+              ;
 // we need special rules for parsing quotations of keywords like `foo: and `foo:bar:
 keywordsymbol!: ksm:KEYSYM { #keywordsymbol = #([AGKSM,"symbol"], #ksm); }
               | key:KEY { #keywordsymbol = #([AGKEY,"symbol"], #key); }
@@ -368,6 +372,10 @@ parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:exp
 
 variable_or_quotation: (HSH) => HSH! unquotation
                      | variable;
+                     
+variable_or_assignment: fieldAssignment
+                      | variable
+                      ;
 
 // user-definable names for variables
 variable:  symbol
@@ -425,6 +433,7 @@ protected AGDEL     : "delegate";      // AGDelegationCreation(SYM sel, TAB arg,
 protected AGUSD     : "univ-message";  // ATExpression(exp)
 protected AGTBL     : "table-get";     // AGTabulation(EXP tbl, EXP idx)
 protected AGSYM     : "symbol";        // AGSymbol(TXT nam)
+protected AGASY     : "symbol";        // AGAssignmentSymbol(TXT nam)
 protected AGSLF     : "self";          // AGSelf
 //protected AGSUP     : "super";         // AGSuper
 protected AGQUO     : "quote";         // AGQuote(STMT stmt)
@@ -504,19 +513,14 @@ POW options { paraphrase = "an exponential operator"; }: POWCHAR (OPRCHAR)*
 
 protected NAM: LETTER (DIGIT | LETTER)*
 	;
-	
-protected KEY: NAM COLON
-    ;
-
-protected KEYSYM: (NAM COLON) (NAM COLON)*
-    ;
 
 // distinguish between:
 // keyworded symbols, like `foo:bar:
 // keywords, like foo:
 // normal identifiers, like foo
 NAM_OR_KEY options { paraphrase = "a name or a keyword"; }
-    : ( NAM COLON NAM ) => KEYSYM { $setType(KEYSYM); }
+    : ( NAM EQL) => ASSNAM { $setType(ASSNAM); }
+    | ( NAM COLON NAM ) => KEYSYM { $setType(KEYSYM); }
     | ( NAM COLON ) => KEY  { $setType(KEY); }
     |   NAM                 { $setType(NAM); }
     ;
@@ -544,6 +548,15 @@ SMC options { paraphrase = "a semicolon"; }: ';';
 EQL options { paraphrase = "an assignment"; }: ":=";
 DOT options { paraphrase = "a dot"; }: '.';
 SEL options { paraphrase = "a selection"; }: ".&";
+
+protected ASSNAM: NAM EQL
+    ;
+
+protected KEY: NAM COLON
+    ;
+
+protected KEYSYM: (NAM COLON) (NAM COLON)*
+    ;
 
 protected ARW: "<-"; // asynchronous send operator
 protected USD: "<+"; // universal send operator
@@ -770,6 +783,7 @@ symbol returns [ATSymbol sym] throws InterpreterException { sym = null; ATExpres
           | #(AGADD add:ADD) { sym = AGSymbol.alloc(NATText.atValue(add.getText())); }
           | #(AGMUL mul:MUL) { sym = AGSymbol.alloc(NATText.atValue(mul.getText())); }
           | #(AGPOW pow:POW) { sym = AGSymbol.alloc(NATText.atValue(pow.getText())); }
+          | #(AGASY asy:ASSNAM) { sym = AGAssignmentSymbol.jAlloc(asy.getText()); }
           | AGSLF { sym = AGSelf._INSTANCE_; }
           | #(AGUSM exp=expression) { sym = new AGUnquoteSymbol(exp); }
           ;
