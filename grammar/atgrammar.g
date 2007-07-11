@@ -248,7 +248,7 @@ quotation: (options { generateAmbigWarnings=false; } :
            | operandquotation);
 
 //statementquotation!: LBC stmt:statement RBC { #statementquotation = #([AGQUO,"quote"],#stmt); };
-statementquotation!: LBC stmts:statementlist { #statementquotation = #([AGQUOBGN,"quote-begin"],#stmts); };
+statementquotation!: LBC stmts:statementlist { #statementquotation = #([AGQUOBEGIN,"quote-begin"],#stmts); };
 // we need special rules for parsing quotations of field assignment symbols like `foo:=
 fieldAssignment!: fas:ASSNAM { #fieldAssignment = #([AGASY,"symbol"], #fas); }
               ;
@@ -451,11 +451,13 @@ protected AGTXT     : "text";          // NATText(<String>)
 protected AGTAB     : "table";         // NATTable(<ATObject[]>)
 protected AGCLO     : "closure";       // NATClosure(TAB arg, BGN bdy)
 
-// auxiliary tokens for operators
+// auxiliary tokens for operators and keyworded symbols
 protected AGCMP     : "symbol";
 protected AGADD     : "symbol";
 protected AGMUL     : "symbol";
 protected AGPOW     : "symbol";
+protected AGKEY     : "symbol";
+protected AGKSM     : "symbol";
 
 protected DIGIT: '0'..'9'
     ;
@@ -739,7 +741,7 @@ expression returns [ATExpression exp] throws InterpreterException
           | #(AGSEL rcv=expression sel=symbol) { exp = new AGSelection(rcv, sel); }
           | #(AGTBL rcv=expression idx=expression) { exp = new AGTabulation(rcv, idx); }
           | #(AGQUO qexp=expression) { exp = new AGQuote(qexp); }
-          | #(AGQUOBGN qstmt=begin) { exp = new AGQuote(qstmt); }
+          | #(AGQUOBEGIN qstmt=begin) { exp = new AGQuote(qstmt); }
           | #(AGUNQ qexp=expression) { exp = new AGUnquote(qexp); }
           | #(AGUQS qexp=expression) { exp = new AGUnquoteSplice(qexp); }
           | #(AGSPL qexp=expression) { exp = new AGSplice(qexp); }
