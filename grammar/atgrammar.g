@@ -213,6 +213,7 @@ invocation!: o:operand c:curried_invocation[#o] { #invocation = #c; };
 operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          |! frc:FRC { #operand = #([AGFRC,"fraction"],frc); }
          |! txt:TXT { #operand = #([AGTXT,"text"],txt); }
+         |! LKU sym:symbol { #operand = #([AGLKU, "lookup"], sym); }
          | unary
          | pseudovariable
          | symbol
@@ -427,6 +428,7 @@ protected AGMULTIASS: "multi-set";     // AGMultiAssignment(TAB par, EXP val)
 protected AGSND     : "send";          // AGMessageSend(EXP rcv, MSG msg)
 protected AGAPL     : "apply";         // AGApplication(SYM sel, TAB arg)
 protected AGSEL     : "select";        // AGSelection(EXP rcv, SYM sel)
+protected AGLKU     : "lookup";	       // AGLookup(SYM sel)
 protected AGMSG     : "message";       // AGMethodInvocation(SYM sel, TAB arg, [])
 protected AGAMS     : "async-message"; // AGAsyncMessage(SYM sel, TAB arg, [])
 protected AGDEL     : "delegate";      // AGDelegationCreation(SYM sel, TAB arg, [])
@@ -568,6 +570,8 @@ PIP options { paraphrase = "a block argument list"; }: '|';
 BQU options { paraphrase = "a quotation"; }: '`';
 HSH options { paraphrase = "an unquotation"; }: '#';
 CAT options { paraphrase = "a splice"; }: '@';
+
+LKU options { paraphrase = "a lexical lookup"; }: '&';
 
 CMP_OR_ARW options { paraphrase = "a comparator, asynchronous or universal send"; }
           : ( "<-" ) => ARW  { $setType(ARW); }
@@ -739,6 +743,7 @@ expression returns [ATExpression exp] throws InterpreterException
           | #(AGUNQ qexp=expression) { exp = new AGUnquote(qexp); }
           | #(AGUQS qexp=expression) { exp = new AGUnquoteSplice(qexp); }
           | #(AGSPL qexp=expression) { exp = new AGSplice(qexp); }
+          | #(AGLKU sel=symbol) { exp = new AGLookup(sel); }
           | exp=message
           | exp=symbol
           | exp=binop
