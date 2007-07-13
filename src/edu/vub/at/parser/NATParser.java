@@ -35,14 +35,17 @@ import edu.vub.at.objects.ATObject;
 import edu.vub.at.objects.ATText;
 import edu.vub.at.objects.natives.NATByCopy;
 import edu.vub.at.objects.natives.NATText;
+import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import antlr.ANTLRException;
+import antlr.CharScanner;
 import antlr.CommonAST;
 import antlr.RecognitionException;
+import antlr.collections.AST;
 
 /**
  * The class NATParser is a front-end (or Facade) to hide the details of the parser from
@@ -53,6 +56,37 @@ import antlr.RecognitionException;
  */
 public class NATParser extends NATByCopy {
 
+	public static ParserFactory _FACTORY_ = new ParserFactory() {
+		public CharScanner createLexer(InputStream source) {
+			return new LexerImpl(source);
+		};
+		
+		public AmbientTalkParser createParser(final CharScanner lexer) {
+			return new AmbientTalkParser() {
+				ParserImpl parser_ = new ParserImpl(lexer);
+
+				public AST parseProgram() throws ANTLRException {
+					parser_.program();
+					return parser_.getAST();
+				}
+				
+				public void setFilename(String name) {
+					parser_.setFilename(name);
+				}
+			};
+		};
+		
+		public AmbientTalkTreeWalker createTreeWalker() {
+			return new AmbientTalkTreeWalker() {
+				TreeWalkerImpl walker_ = new TreeWalkerImpl();
+				
+				public NATAbstractGrammar walkAST(AST tree) throws InterpreterException ,ANTLRException {
+					return walker_.program(tree);
+				};
+			};
+		};
+	};
+	
 	public static final NATParser _INSTANCE_ = new NATParser();
 	
 	public ATAbstractGrammar base_parse(ATText source) throws InterpreterException {
@@ -62,22 +96,22 @@ public class NATParser extends NATByCopy {
 	public static ATAbstractGrammar parse(String filename, InputStream source) throws InterpreterException {
 		try {
 			try {
-				LexerImpl lexer = new LexerImpl(source);
-				ParserImpl parser = new ParserImpl(lexer);
+				CharScanner lexer = _FACTORY_.createLexer(source);
+				AmbientTalkParser parser = _FACTORY_.createParser(lexer);
+				AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker();
 				if (filename != null) {
 					parser.setFilename(filename);
 				}
 				source.mark(source.available());
 
 				// Parse the input expression
-				parser.program();
-				CommonAST t = (CommonAST)parser.getAST();
+				CommonAST tree = (CommonAST)parser.parseProgram();
 
 				// Traverse the tree created by the parser
-				TreeWalkerImpl walker = new TreeWalkerImpl();
-				return walker.program(t);
+				return walker.walkAST(tree);
 			} catch(RecognitionException e) {
 				source.reset();
+				e.printStackTrace();
 				throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);
 			} catch(ANTLRException e) {
 				throw new XParseError(e.getMessage(), e);
