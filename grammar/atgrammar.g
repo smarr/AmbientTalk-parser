@@ -214,6 +214,7 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          |! frc:FRC { #operand = #([AGFRC,"fraction"],frc); }
          |! txt:TXT { #operand = #([AGTXT,"text"],txt); }
          |! LKU sym:symbol { #operand = #([AGLKU, "lookup"], sym); }
+         |! LKU sym2:fieldAssignment { #operand = #([AGLKU, "lookup"], sym2); }
          | unary
          | pseudovariable
          | symbol
