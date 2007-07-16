@@ -213,8 +213,7 @@ invocation!: o:operand c:curried_invocation[#o] { #invocation = #c; };
 operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          |! frc:FRC { #operand = #([AGFRC,"fraction"],frc); }
          |! txt:TXT { #operand = #([AGTXT,"text"],txt); }
-         |! LKU sym:symbol { #operand = #([AGLKU, "lookup"], sym); }
-         |! LKU sym2:fieldAssignment { #operand = #([AGLKU, "lookup"], sym2); }
+         |! LKU sym:variable_or_assignment { #operand = #([AGLKU, "lookup"], sym); }
          | unary
          | pseudovariable
          | symbol
@@ -296,7 +295,7 @@ tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table
 selection![AST functor]: SEL var:variable_or_assignment { #selection = #([AGSEL,"select"], functor, var); };
 // transforms o.x into o.x()
 zeroArityInvocation![AST functor]: DOT var:variable {
-	#zeroArityInvocation = #([AGSND,"send"], functor, #([AGMSG,"message"], #([AGAPL,"apply"], var, #([AGTAB,"table"], #([COM])))));
+	#zeroArityInvocation = #([AGSND,"send"], functor, #([AGFSL,"field"], var));
 };
 
 // Function application can be done using two distinct mechanisms, either using a 
@@ -328,8 +327,9 @@ keywordlist: singlekeyword
 // This rule groups a keyword and the adjoined argument expression into a single tree element.
 singlekeyword: KEY^ argument;
 
-// First-class message creation syntax: .m() or .key:val
-message: apl:application[AGMSG,"message"]; //{ #message = #([AGMSG,"message"], apl); };
+// First-class message creation syntax: .m or .m() or .key:val
+message: (KEY | (variable LPR)) => apl:application[AGMSG,"message"] //{ #message = #([AGMSG,"message"], apl); };
+       |! var:variable { #message = #([AGFSL,"field"], var); };
 
 // First-class aynchronous message creation syntax: <-m() or <-key:val
 asyncmessage: apl:application[AGAMS, "async-message"]; //{ #asyncmessage = #([AGAMS,"async-message"], apl); };
@@ -431,6 +431,7 @@ protected AGAPL     : "apply";         // AGApplication(SYM sel, TAB arg)
 protected AGSEL     : "select";        // AGSelection(EXP rcv, SYM sel)
 protected AGLKU     : "lookup";	       // AGLookup(SYM sel)
 protected AGMSG     : "message";       // AGMethodInvocation(SYM sel, TAB arg, [])
+protected AGFSL     : "field";         // AGFieldSelection(SYM sel, [])
 protected AGAMS     : "async-message"; // AGAsyncMessage(SYM sel, TAB arg, [])
 protected AGDEL     : "delegate";      // AGDelegationCreation(SYM sel, TAB arg, [])
 protected AGUSD     : "univ-message";  // ATExpression(exp)
@@ -727,7 +728,7 @@ assignment returns [ATAssignment ass] throws InterpreterException
     NATTable par; }
           : #(AGASSVAR nam=symbol val=expression) { ass = new AGAssignVariable(nam, val); }
           | #(AGASSTAB #(AGTBL rcv=expression idx=expression) val=expression) { ass = new AGAssignTable(rcv, idx, val); }
-          | #(AGASSFLD #(AGSND rcv=expression #(AGMSG #(AGAPL nam=symbol par=table))) val=expression) { ass = new AGAssignField(rcv, nam, val); }
+          | #(AGASSFLD #(AGSND rcv=expression #(AGFSL nam=symbol)) val=expression) { ass = new AGAssignField(rcv, nam, val); }
           | #(AGMULTIASS par=params val=expression) { ass = new AGMultiAssignment(par, val); }
           ;
 
@@ -758,6 +759,7 @@ message returns [ATExpression msg] throws InterpreterException
   	ATExpression exp;
   	ATSymbol sel; NATTable arg; ATExpression ann = NATTable.EMPTY; }
   	      : #(AGMSG #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGMethodInvocationCreation(sel,arg,ann); }
+  	      | #(AGFSL sel=symbol (ann=expression)? ) { msg = new AGFieldSelectionCreation(sel,ann); }
   	      | #(AGAMS #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGAsyncMessageCreation(sel,arg,ann); }
   	      | #(AGDEL #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGDelegationCreation(sel,arg,ann); }
   	      | #(AGUSD exp=expression) { msg=exp; }

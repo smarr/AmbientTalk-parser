@@ -123,7 +123,7 @@ public class ATParserTest extends TestCase {
 		testParse("x[5] := 7",
 		          "(begin (table-set (table-get ( symbol x ) ( number 5 ) ) (number 7)))");
 		testParse("o.m := 1",
-                   "(begin (field-set (send (symbol o) (message (apply (symbol m) (table)))) (number 1)))");
+                   "(begin (field-set (send (symbol o) (field (symbol m))) (number 1)))");
 		testParse("[x, y] := [ y, x]",
                   "(begin (multi-set (table (symbol x) (symbol y)) (table (symbol y) (symbol x))))");
 		testParse("[x, y := 1] := a",
@@ -132,8 +132,8 @@ public class ATParserTest extends TestCase {
 				  "(begin (define-type (symbol foo) (table)))");
 		testParse("deftype foo <: bar",
 				  "(begin (define-type (symbol foo) (table (symbol bar))))");
-		testParse("deftype foo <: bar, o.x",
-		          "(begin (define-type (symbol foo) (table (symbol bar) (send (symbol o) (message (apply (symbol x) (table)))))))");
+		testParse("deftype foo <: bar, x",
+		          "(begin (define-type (symbol foo) (table (symbol bar) (symbol x))))");
 		testParse("import o alias a := b, c := d exclude e, f",
 				  "(begin (import (symbol o) (table (table (symbol a) (symbol b)) (table (symbol c) (symbol d))) (table (symbol e) (symbol f))))");
 		testParse("import o.m()",
@@ -164,13 +164,15 @@ public class ATParserTest extends TestCase {
 		testParse("m(a,b)",
 				 "(begin (apply (symbol m) (table (symbol a) (symbol b))))");
 		testParse("o.m",
-		          "(begin (send (symbol o) (message (apply (symbol m) (table)))))");
+		          "(begin (send (symbol o) (field (symbol m))))");
 		testParse("o.&m",
                   "(begin (select (symbol o) (symbol m)))");
 		testParse("o.&m:=",
                   "(begin (select (symbol o) (symbol m:=)))");
 		testParse(".m(a,b)",
 				 "(begin (message (apply (symbol m) (table (symbol a) (symbol b)))))");
+		testParse(".x",
+		          "(begin (field (symbol x)))");
 		testParse("<-m(a,b)",
 		          "(begin (async-message (apply (symbol m) (table (symbol a) (symbol b)))))");
 		testParse("^m(a,b)",
@@ -282,9 +284,9 @@ public class ATParserTest extends TestCase {
 	    testParse("/",
 	              "(begin (symbol /))");
 	    testParse("/.at",
-	    		     "(begin (send (symbol /) (message (apply (symbol at) (table)))))");
+	    		     "(begin (send (symbol /) (field (symbol at))))");
 	    	testParse("~.test",
-	    		     "(begin (send (symbol ~) (message (apply (symbol test) (table)))))");
+	    		     "(begin (send (symbol ~) (field (symbol test))))");
 	}
 	
 	/**
@@ -374,9 +376,9 @@ public class ATParserTest extends TestCase {
 	    		     "(begin (apply (send (symbol closures)" +
 	    		     "                    (message (apply (symbol at)" +
 	    		     "                                    (table (send (symbol closures)" +
-	    		     "                                                 (message (apply (symbol length) (table)))))))) (table)))");
+	    		     "                                                 (field (symbol length))))))) (table)))");
 		testParse("closures[closures.length]()",
-				 "(begin (apply (table-get (symbol closures) (send (symbol closures) (message (apply (symbol length) (table))))) (table)))");
+				 "(begin (apply (table-get (symbol closures) (send (symbol closures) (field (symbol length)))) (table)))");
 	}
 	
 	/**
