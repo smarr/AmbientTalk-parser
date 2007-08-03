@@ -160,8 +160,8 @@ excludelist: "exclude"! importname (COM! importname)* { #excludelist = #([AGTAB,
            | /* nothing */ { #excludelist = #([AGTAB, "table"], #([COM])); }
            ;
 
-// valid import names are: normal identifiers, keywords (e.g. foo:bar:) and operators
-importname : keywordsymbol | variable_or_assignment
+// valid import names are: normal identifiers, keywords (e.g. foo:bar:), operators, assignment symbols or an unquote
+importname : keywordsymbol | variable_or_quotation
            ;
 
 // A function definition can include a canonical parameter list of the form <(a,b,c)>

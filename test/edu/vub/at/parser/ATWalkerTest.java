@@ -155,6 +155,7 @@ public class ATWalkerTest extends TestCase {
  		testWalker("`{ #(receiver) ^  #(name) ( @args ); }", "`( #(receiver) ^  #(name) ( @args ))");
  		testWalker("`{ #(receiver) <- #(name) ( @args ); }", "`( #(receiver) <- #(name) ( @args ))");
         testWalker("`{ def foo(#@(`([a]))) { #@([1]) }}", "`(def foo (#@( `([a]) )) { #@([1]) })");
+        testWalker("import o alias #(x) := #(y) exclude #(z)");
 	}
 	
 	public void testOperatorGrammar() {
