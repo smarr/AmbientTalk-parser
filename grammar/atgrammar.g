@@ -54,7 +54,7 @@ globalstatements!: stmt:statement stmts:moreglobalstatements[#stmt] { #globalsta
 moreglobalstatements![AST stmt]: (SMC EOF) => SMC EOF { #moreglobalstatements = #stmt; }
                                | EOF { #moreglobalstatements = #stmt; }
                                | SMC gsts:globalstatements { #stmt.setNextSibling(#gsts);
-                         	                                   #moreglobalstatements = #stmt; }
+                         	                                 #moreglobalstatements = #stmt; }
                                ;
 
 // an optional terminating semicolon is allowed
@@ -161,7 +161,7 @@ excludelist: "exclude"! importname (COM! importname)* { #excludelist = #([AGTAB,
            ;
 
 // valid import names are: normal identifiers, keywords (e.g. foo:bar:) and operators
-importname : keywordsymbol | variable
+importname : keywordsymbol | variable_or_assignment
            ;
 
 // A function definition can include a canonical parameter list of the form <(a,b,c)>
@@ -373,7 +373,7 @@ parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:exp
           | CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
 
 variable_or_quotation: (HSH) => HSH! unquotation
-                     | variable;
+                     | variable_or_assignment;
                      
 variable_or_assignment: fieldAssignment
                       | variable

@@ -140,8 +140,8 @@ public class ATParserTest extends TestCase {
 		          "(begin (import (send (symbol o) (message (apply (symbol m) (table)))) (table) (table)))");
 		testParse("import o alias a: := b:c:",
 		          "(begin (import (symbol o) (table (table (symbol a:) (symbol b:c:))) (table)))");
-		testParse("import o exclude e",
-		          "(begin (import (symbol o) (table) (table (symbol e))))");
+		testParse("import o exclude e, f:=",
+		          "(begin (import (symbol o) (table) (table (symbol e) (symbol f:=))))");
 	}
 	
 	/**
