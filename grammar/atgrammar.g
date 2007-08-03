@@ -149,14 +149,16 @@ importstatement!: host:expression alias:aliasbindings exclude:excludelist
    { #importstatement = #([AGIMPORT,"import"], host, alias, exclude); }
                 ;
                 
-aliasbindings: "alias"! aliasbinding (COM! aliasbinding)* { #aliasbindings = #([AGTAB, "table"], #aliasbindings); }
+aliasbindings: ("alias" unquotation) => "alias"! unquotation
+             | "alias"! aliasbinding (COM! aliasbinding)* { #aliasbindings = #([AGTAB, "table"], #aliasbindings); }
              | /* nothing */ { #aliasbindings = #([AGTAB, "table"], #([COM])); }
              ;
              
 aliasbinding!: (name1:importname EQL name2:importname) { #aliasbinding = #([AGTAB, "table"],name1, name2); }
              ;
 
-excludelist: "exclude"! importname (COM! importname)* { #excludelist = #([AGTAB, "table"], #excludelist); }
+excludelist: ("exclude" unquotation) => "exclude"! unquotation
+           | "exclude"! importname (COM! importname)* { #excludelist = #([AGTAB, "table"], #excludelist); }
            | /* nothing */ { #excludelist = #([AGTAB, "table"], #([COM])); }
            ;
 
@@ -218,7 +220,7 @@ operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          | pseudovariable
          | symbol
          | BQU! quotation
-         | HSH! unquotation
+         | unquotation
          | DOT! message
          | ARW! asyncmessage
          | CAR! delegationmessage
@@ -261,8 +263,8 @@ operandquotation!: qexp:operand { #operandquotation = #([AGQUO,"quote"],#qexp); 
 // An unquotation is an unquoted or unquote-spliced piece of source code
 // #operand
 // #@operand
-unquotation!: uexp:operand { #unquotation = #([AGUNQ,"unquote"], uexp); }
-            | CAT usexp:operand { #unquotation = #([AGUQS,"unquote-splice"], usexp); };
+unquotation!: HSH uexp:operand { #unquotation = #([AGUNQ,"unquote"], uexp); }
+            | HSH CAT usexp:operand { #unquotation = #([AGUQS,"unquote-splice"], usexp); };
 
 // Curried invocations eagerly consume all subsequent ( [ . tokens. If such tokens are
 // available a single invocation is parsed passing on the received functor (which will
@@ -372,7 +374,7 @@ parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:exp
           | vq:variable_or_quotation { #parameter = #vq; }
           | CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
 
-variable_or_quotation: (HSH) => HSH! unquotation
+variable_or_quotation: (HSH) => unquotation
                      | variable_or_assignment;
                      
 variable_or_assignment: fieldAssignment
@@ -716,9 +718,8 @@ definition returns [ATDefinition def] throws InterpreterException
 
 importstmt returns [ATImport imp] throws InterpreterException
   { imp = null;
-  	ATExpression host;
-  	NATTable aliases, excludes; }
-          : #(AGIMPORT host=expression aliases=table excludes=table) { imp = new AGImport(host, aliases, excludes); }
+  	ATExpression host, aliases, excludes; }
+          : #(AGIMPORT host=expression aliases=expression excludes=expression) { imp = new AGImport(host, aliases, excludes); }
           ;
 
 assignment returns [ATAssignment ass] throws InterpreterException

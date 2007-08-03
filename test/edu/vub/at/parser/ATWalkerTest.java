@@ -1,5 +1,6 @@
 package edu.vub.at.parser;
 
+import edu.vub.at.exceptions.InterpreterException;
 import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
 import edu.vub.util.Matcher;
 import edu.vub.util.Pattern;
@@ -155,7 +156,7 @@ public class ATWalkerTest extends TestCase {
  		testWalker("`{ #(receiver) ^  #(name) ( @args ); }", "`( #(receiver) ^  #(name) ( @args ))");
  		testWalker("`{ #(receiver) <- #(name) ( @args ); }", "`( #(receiver) <- #(name) ( @args ))");
         testWalker("`{ def foo(#@(`([a]))) { #@([1]) }}", "`(def foo (#@( `([a]) )) { #@([1]) })");
-        testWalker("import o alias #(x) := #(y) exclude #(z)");
+        testWalker("import o alias #(foo) exclude #(bar)");
 	}
 	
 	public void testOperatorGrammar() {

@@ -254,8 +254,8 @@ public class ATParserTest extends TestCase {
  				"(begin (quote-begin (begin (send (unquote (symbol receiver)) (async-message (apply (unquote-symbol (symbol name)) (table (splice (symbol args)))))))))");
  		testParse("`{ def foo(#@(`([a]))) { #@([1]) }}",
  				  "(begin (quote-begin (begin (define-function (apply (symbol foo) (table (unquote-splice (quote (table (symbol a)))))) (begin (unquote-splice (table (number 1))))))))");
- 		testParse("import o alias #(x) := #(y) exclude #(z)",
- 				  "(begin (import (symbol o) (table (table (unquote (symbol x)) (unquote (symbol y)))) (table (unquote (symbol z)))))");
+ 		testParse("import o alias #(foo) exclude #(bar)",
+		          "(begin (import (symbol o) (unquote (symbol foo)) (unquote (symbol bar))))");
 	}
 	
 	/**
