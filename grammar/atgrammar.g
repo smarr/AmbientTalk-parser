@@ -215,7 +215,7 @@ invocation!: o:operand c:curried_invocation[#o] { #invocation = #c; };
 operand  :! nbr:NBR { #operand = #([AGNBR,"number"],nbr); }
          |! frc:FRC { #operand = #([AGFRC,"fraction"],frc); }
          |! txt:TXT { #operand = #([AGTXT,"text"],txt); }
-         |! LKU sym:variable_or_assignment { #operand = #([AGLKU, "lookup"], sym); }
+         |! LKU sym:variable_keyword_or_assignment { #operand = #([AGLKU, "lookup"], sym); }
          | unary
          | pseudovariable
          | symbol
@@ -294,7 +294,7 @@ invoke_expression[AST functor]:
 	|! (USD expression) => USD exp:expression { #invoke_expression = #([AGSND,"send"], functor, #([AGUSD,"univ-message"], exp)); };
 
 tabulation![AST functor]: LBR idx:expression RBR { #tabulation = #([AGTBL,"table-get"], functor, idx); };
-selection![AST functor]: SEL var:variable_or_assignment { #selection = #([AGSEL,"select"], functor, var); };
+selection![AST functor]: SEL var:variable_keyword_or_assignment { #selection = #([AGSEL,"select"], functor, var); };
 // transforms o.x into o.x()
 zeroArityInvocation![AST functor]: DOT var:variable {
 	#zeroArityInvocation = #([AGSND,"send"], functor, #([AGFSL,"field"], var));
@@ -373,6 +373,9 @@ parameterlist: parameter (COM! parameter)* { #parameterlist = #([AGTAB, "table"]
 parameter!: (variable_or_quotation EQL) => var:variable_or_quotation EQL exp:expression { #parameter = #([AGASSVAR, "var-set"], var, exp); }
           | vq:variable_or_quotation { #parameter = #vq; }
           | CAT v:variable_or_quotation { #parameter = #([AGSPL,"splice"], v); };
+
+variable_keyword_or_assignment: variable_or_assignment
+                              | keywordsymbol;
 
 variable_or_quotation: (HSH) => unquotation
                      | variable_or_assignment;

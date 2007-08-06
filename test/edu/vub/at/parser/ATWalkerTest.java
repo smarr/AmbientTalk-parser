@@ -124,6 +124,8 @@ public class ATWalkerTest extends TestCase {
 	    testWalker("obj^m(a)");
 		testWalker("&x","&x");
 		testWalker("&x:=","&x:=");
+		testWalker("o.&foo:");
+		testWalker("&foo:");
 	}
 	
 	public void testQuasiquoting() {

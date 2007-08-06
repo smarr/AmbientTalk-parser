@@ -189,6 +189,10 @@ public class ATParserTest extends TestCase {
                   "(begin (lookup (symbol x)))");
 		testParse("&x:=",
                   "(begin (lookup (symbol x:=)))");
+		testParse("o.&foo:",
+                  "(begin (select (symbol o) (symbol foo:)))");
+		testParse("&foo:",
+                  "(begin (lookup (symbol foo:)))");
 	}
 	
 	public void testQuasiquoting() {
