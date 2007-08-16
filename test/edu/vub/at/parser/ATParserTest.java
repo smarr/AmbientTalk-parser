@@ -455,9 +455,10 @@ public class ATParserTest extends TestCase {
 				  "(begin (+ (number 1) (number 2)))");
 		testParse("{ nil /* an empty block */ }",
 		          "(begin (closure (table) (begin (symbol nil))))");
-		// NOTE THAT THE NEWLINE AT THE END IS OBLIGATORY!!!
-		testParse("1 + 2//test single line comments\n",
+		testParse("1 + 2//test single line comments",
 		          "(begin (+ (number 1) (number 2)))");
+		testParse("1 + 2//test single line comments ending in newline\n",
+                  "(begin (+ (number 1) (number 2)))");
 		// test whether operators that start with '/' work fine
 		testParse("1 /+/ 2",
 				  "(begin (/+/ (number 1) (number 2)))");

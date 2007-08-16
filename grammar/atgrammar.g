@@ -594,7 +594,7 @@ TXT options { paraphrase = "a text string"; }: '"' (ESC|~('"'|'\\'))* '"'
 
 // Single-line comments
 protected SL_COMMENT
-    : "//" (~('\n'|'\r'))* ('\r')? '\n' {$setType(Token.SKIP); newline(); }
+    : "//" (~('\n'|'\r'))* ('\r')? ('\n')? {$setType(Token.SKIP); newline(); }
     ;
 
 // to distinguish between operators starting with '/' and single-line
