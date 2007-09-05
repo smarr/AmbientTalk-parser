@@ -142,6 +142,10 @@ public class ATParserTest extends TestCase {
 		          "(begin (import (symbol o) (table (table (symbol a:) (symbol b:c:))) (table)))");
 		testParse("import o exclude e, f:=",
 		          "(begin (import (symbol o) (table) (table (symbol e) (symbol f:=))))");
+		testParse("{}",
+				  "(begin (closure (table) (begin)))");
+		testParse("def m() {}",
+		          "(begin (define-function (apply (symbol m) (table)) (begin)))");
 	}
 	
 	/**

@@ -98,6 +98,8 @@ public class ATWalkerTest extends TestCase {
 		testWalker("import o.m()");
 		testWalker("import o alias a: := b:c:");
 		testWalker("import o exclude e, f:=");
+		testWalker("{}");
+        testWalker("def m() {}");
 	}
 	
 	public void testExpressionGrammar() {

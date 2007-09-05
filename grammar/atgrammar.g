@@ -59,7 +59,8 @@ moreglobalstatements![AST stmt]: (SMC EOF) => SMC EOF { #moreglobalstatements = 
 
 // an optional terminating semicolon is allowed
 // a statementlist must always end with RBC
-statementlist!: sts:statements { #statementlist = #([AGBEGIN,"begin"], #sts); };
+statementlist!: sts:statements { #statementlist = #([AGBEGIN,"begin"], #sts); }
+              | RBC { #statementlist = #([AGBEGIN,"begin"], #([SMC])); };
 statements!: stmt:statement stmts:morestatements[#stmt] { #statements = #stmts; };
 morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
                          | RBC { #morestatements = #stmt; }
@@ -824,8 +825,8 @@ begin returns [AGBegin bgn] throws InterpreterException
   { bgn = null;
   	ATStatement stmt;
   	LinkedList list = new LinkedList(); }
-          : #(AGBEGIN (stmt=statement { list.add(stmt); })+ )
-              { bgn = new AGBegin(NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); }
+          : #(AGBEGIN (stmt=statement { list.add(stmt); })* )
+              { bgn = new AGBegin( (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); }
           ;
           
 params returns [NATTable par] throws InterpreterException
