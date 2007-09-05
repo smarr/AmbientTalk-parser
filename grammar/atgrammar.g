@@ -144,7 +144,7 @@ typedefinition![AST nam]
                  |  SST parents:commalist { #typedefinition = #([AGDEFTYPE, "define-type"], nam, parents); }
                  ;
 
-// import host alias { a -> b } exclude { c, d};  is parsed into the intermediary representation
+// import host alias a := b exclude c, d;  is parsed into the intermediary representation
 // as (import (symbol host) (table (table (a b))) (table (c d)))  [with a,b,c,d = (symbol _)]
 importstatement!: host:expression alias:aliasbindings exclude:excludelist
    { #importstatement = #([AGIMPORT,"import"], host, alias, exclude); }
@@ -681,7 +681,7 @@ class TreeWalkerImpl extends TreeParser;
   }
   
   public AGBegin emptyMethodBody() {
-  	  return new AGBegin(NATTable.atValue( new ATObject[] { AGSymbol.jAlloc("nil") } ));
+  	  return new AGBegin(NATTable.EMPTY);
   }
 
 } // end TreeWalker preamble
