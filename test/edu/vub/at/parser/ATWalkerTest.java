@@ -1,15 +1,13 @@
 package edu.vub.at.parser;
 
-import edu.vub.at.exceptions.InterpreterException;
-import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
-import edu.vub.util.Matcher;
-import edu.vub.util.Pattern;
-import edu.vub.util.PatternSyntaxException;
-
 import java.io.ByteArrayInputStream;
 
 import junit.framework.TestCase;
 import antlr.CommonAST;
+import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
+import edu.vub.util.Matcher;
+import edu.vub.util.Pattern;
+import edu.vub.util.PatternSyntaxException;
 
 public class ATWalkerTest extends TestCase {
 	
