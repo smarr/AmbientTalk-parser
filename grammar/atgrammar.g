@@ -666,6 +666,7 @@ protected ESC
   import edu.vub.at.objects.natives.*;
   import edu.vub.at.objects.grammar.*;
   import edu.vub.at.objects.natives.grammar.*;
+  import edu.vub.at.exceptions.XParseError;
   import edu.vub.at.exceptions.InterpreterException;
   import java.util.LinkedList; }
 class TreeWalkerImpl extends TreeParser;
@@ -783,8 +784,20 @@ literal returns[ATExpression lit] throws InterpreterException
   { lit = null;
   	NATTable par;
   	ATBegin body; }
-          : #(AGNBR nbr:NBR) { lit = NATNumber.atValue(Integer.parseInt(nbr.getText())); }
-          | #(AGFRC frc:FRC) { lit = NATFraction.atValue(Double.parseDouble(frc.getText())); }
+          : #(AGNBR nbr:NBR) {
+          	try {
+          		lit = NATNumber.atValue(Integer.parseInt(nbr.getText()));
+          	} catch (NumberFormatException e) {
+          		throw new XParseError("unparsable number", e);
+          	}
+          }
+          | #(AGFRC frc:FRC) {
+          	try {
+          		lit = NATFraction.atValue(Double.parseDouble(frc.getText()));
+          	} catch(NumberFormatException e) {
+          		throw new XParseError("unparsable fraction", e);
+          	}
+          }
           | #(AGTXT txt:TXT) { String text = txt.getText(); lit = NATText.atValue(text.substring(1, text.length() - 1)); }
           | lit=table
           | #(AGCLO par=params body=begin) { lit = new AGClosureLiteral(par, body); }
