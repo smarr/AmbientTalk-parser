@@ -1,39 +1,19 @@
 package edu.vub.at.parser;
 
+import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
+
 import java.io.ByteArrayInputStream;
 
 import junit.framework.TestCase;
+
+import org.apache.regexp.RE;
+
 import antlr.CommonAST;
-import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
-import edu.vub.util.Matcher;
-import edu.vub.util.Pattern;
-import edu.vub.util.PatternSyntaxException;
 
 public class ATWalkerTest extends TestCase {
 	
 	public static void main(String[] args) {
 		junit.swingui.TestRunner.run(ATWalkerTest.class);
-	}
-	
-	/**
-	 * Replace all occurences of the regular expression match 'regex' in 'input' by 'replacement'.
-	 * @return the output string with all occurences replaced.
-	 */
-	public static String replaceAll(String input, String regex, String replacement) throws PatternSyntaxException {
-		try {
-			Pattern p = Pattern.compile(regex);
-			Matcher m = p.matcher(new StringBuffer(input));
-			
-			StringBuffer sb = new StringBuffer();
-			while (m.find()) {
-			     m.appendReplacement(sb, replacement);
-			}
-			m.appendTail(sb);
-			return sb.toString();
-		} catch (PatternSyntaxException e) {
-			e.printStackTrace();
-			return null;
-		}
 	}
 	
 	private void testWalker(String walkerInput) {
@@ -53,11 +33,9 @@ public class ATWalkerTest extends TestCase {
             // Traverse the tree created by the parser
             NATAbstractGrammar ag = walker.program(t);
             
-            // Backport from JDK 1.4 to 1.3
-            assertEquals(replaceAll(output, "\\s", ""), replaceAll(ag.meta_print().javaValue, "\\s", ""));
-            //assertEquals(output.replaceAll("\\s",""), ag.meta_print().javaValue.replaceAll("\\s",""));
+            assertEquals(new RE("\\s").subst(output, ""), new RE("\\s").subst(ag.meta_print().javaValue, ""));
         } catch(Exception e) {
-        		e.printStackTrace();
+        	e.printStackTrace();
             fail("exception: "+e);
         }
 	}
