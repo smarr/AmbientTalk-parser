@@ -121,7 +121,7 @@ statement:  ("def"! definition)
 // NOTE: the pseudovariable self cannot be defined directly but it can be used as a receiver for
 // external definitions, a fact which is reflected by the last case in this rule. 
 definition!	: par:parametertable vls:valueDefinition { #definition = #([AGMULTIDEF,"multi-def"], par, vls); }
-			| sig:keywordparameterlist bod:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], sig, bod);}
+			| sig:keywordparameterlist ann:annotation bod:methodBodyDefinition { #definition = #([AGDEFFUN,"define-function"], sig, ann, bod);}
 			| nam:variable_or_assignment vom:variable_or_method[#nam] { #definition = #vom; }
 			| pse:pseudovariable DOT ext:external_definition[#pse] { #definition = #ext; }
 			;
@@ -133,7 +133,7 @@ definition!	: par:parametertable vls:valueDefinition { #definition = #([AGMULTID
 // the external_definition rule
 variable_or_method![AST nam]
 			: val:valueDefinition { #variable_or_method = #([AGDEFFIELD,"define-field"], nam, val);}
-			| inv:canonicalparameterlist[#nam] bdy:methodBodyDefinition { #variable_or_method = #([AGDEFFUN,"define-function"], inv, bdy); }
+			| inv:canonicalparameterlist[#nam] ann:annotation bdy:methodBodyDefinition { #variable_or_method = #([AGDEFFUN,"define-function"], inv, ann, bdy); }
 			| LBR siz:expression RBR init:methodBodyDefinition { #variable_or_method = #([AGDEFTABLE,"define-table"], nam, siz, init); }
 			| DOT ext:external_definition[#nam] { #variable_or_method = #ext; }
 			;
@@ -141,9 +141,9 @@ variable_or_method![AST nam]
 // Parses external definitions on a receiver. These external definitions can involve fields and
 // cononical or keyworded message.
 external_definition![AST rcv]
-			: sig:keywordparameterlist bod:methodBodyDefinition { #external_definition = #([AGDEFEXTMTH,"define-external-method"], rcv, sig, bod); }
+			: sig:keywordparameterlist ann:annotation bod:methodBodyDefinition { #external_definition = #([AGDEFEXTMTH,"define-external-method"], rcv, sig, ann, bod); }
 			// Here we use an antlr lookahead expression to avoid using another splicing of a rule.
-			| (variable LPR) => nme:variable inv:canonicalparameterlist[#nme] bdy:methodBodyDefinition { #external_definition = #([AGDEFEXTMTH,"define-external-method"], rcv, inv, bdy); }
+			| (variable LPR) => nme:variable inv:canonicalparameterlist[#nme] an_:annotation bdy:methodBodyDefinition { #external_definition = #([AGDEFEXTMTH,"define-external-method"], rcv, inv, an_, bdy); }
 			| nam:variable val:valueDefinition { #external_definition = #([AGDEFEXTFLD,"define-external-field"], rcv, nam, val); }
 			;
 
@@ -731,13 +731,14 @@ definition returns [ATDefinition def] throws InterpreterException
   	ATSymbol nam, rcv;
   	NATTable pars;
   	ATExpression idx, val;
-  	ATBegin bdy; }
+  	ATBegin bdy;
+  	ATExpression ann =NATTable.EMPTY; }
           : { val = AGSymbol.jAlloc("nil"); }
             #(AGDEFFIELD nam=symbol (val=expression)?) { def = new AGDefField(nam, val); }
           | { bdy = emptyMethodBody(); } 
-            #(AGDEFFUN #(AGAPL nam=symbol pars=params) (bdy=begin)? ) { def = new AGDefFunction(nam, pars, bdy); }
+            #(AGDEFFUN #(AGAPL nam=symbol pars=params) (ann=expression)? (bdy=begin)? ) { def = new AGDefFunction(nam, pars, bdy, ann); }
           | { bdy = emptyMethodBody(); }
-            #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) (bdy=begin)? ) { def = new AGDefExternalMethod(rcv, nam, pars, bdy); }
+            #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) (ann=expression)? (bdy=begin)? ) { def = new AGDefExternalMethod(rcv, nam, pars, bdy, ann); }
           | { val = AGSymbol.jAlloc("nil"); }
             #(AGDEFEXTFLD rcv=symbol nam=symbol (val=expression)? )  { def = new AGDefExternalField(rcv, nam, val); }
           | { bdy = emptyMethodBody(); }
