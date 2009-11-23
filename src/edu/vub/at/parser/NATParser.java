@@ -42,8 +42,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import antlr.ANTLRException;
+import antlr.ASTFactory;
 import antlr.CharScanner;
-import antlr.CommonAST;
 import antlr.RecognitionException;
 import antlr.collections.AST;
 
@@ -61,10 +61,18 @@ public class NATParser extends NATByCopy {
 			return new LexerImpl(source);
 		};
 		
-		public AmbientTalkParser createParser(final CharScanner lexer) {
-			return new AmbientTalkParser() {
-				ParserImpl parser_ = new ParserImpl(lexer);
+		public AmbientTalkParser createParser(String fileName, final CharScanner lexer) {
+			final ParserImpl parser_ = new ParserImpl(lexer);
 
+			// we'll make the parser generate our custom ASTs that
+			// capture line number and column number information
+			// (see the CommonASTWithLines class for details)
+			ASTFactory factory = new ASTFactory();
+		    factory.setASTNodeClass(CommonASTWithLines.class);
+		    parser_.setASTFactory(factory);
+		    if (fileName != null) parser_.setFilename(fileName);
+		    
+			return new AmbientTalkParser() {
 				public AST parseProgram() throws ANTLRException {
 					parser_.program();
 					return parser_.getAST();
@@ -76,10 +84,18 @@ public class NATParser extends NATByCopy {
 			};
 		};
 		
-		public AmbientTalkTreeWalker createTreeWalker() {
-			return new AmbientTalkTreeWalker() {
-				TreeWalkerImpl walker_ = new TreeWalkerImpl();
-				
+		public AmbientTalkTreeWalker createTreeWalker(String fileName) {
+			final TreeWalkerImpl walker_ = new TreeWalkerImpl();
+			walker_.setFileName(fileName == null ? "" : fileName);
+
+			// we'll make the parser generate our custom ASTs that
+			// capture line number and column number information
+			// (see the CommonASTWithLines class for details)
+		    ASTFactory factory = new ASTFactory();
+		    factory.setASTNodeClass(CommonASTWithLines.class);
+		    walker_.setASTFactory(factory);
+			
+			return new AmbientTalkTreeWalker(fileName == null ? "" : fileName) {				
 				public NATAbstractGrammar walkAST(AST tree) throws InterpreterException ,ANTLRException {
 					return walker_.program(tree);
 				};
@@ -97,15 +113,12 @@ public class NATParser extends NATByCopy {
 		try {
 			try {
 				CharScanner lexer = _FACTORY_.createLexer(source);
-				AmbientTalkParser parser = _FACTORY_.createParser(lexer);
-				AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker();
-				if (filename != null) {
-					parser.setFilename(filename);
-				}
+				AmbientTalkParser parser = _FACTORY_.createParser(filename, lexer);
+				AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker(filename);
 				source.mark(source.available());
-
+				
 				// Parse the input expression
-				CommonAST tree = (CommonAST)parser.parseProgram();
+			    AST tree = parser.parseProgram();
 
 				// Traverse the tree created by the parser
 				return walker.walkAST(tree);

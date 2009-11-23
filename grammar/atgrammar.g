@@ -703,14 +703,28 @@ class TreeWalkerImpl extends TreeParser;
 
   // this auxiliary function converts operator syntax such as <a+b> into a message send of the form <a.+(b)>
   public AGMessageSend operatorToSend(AST opr, ATExpression receiver, ATExpression operand) {
-	  return new AGMessageSend(receiver,
+	  AGMessageSend snd = new AGMessageSend(receiver,
 	                           new AGMethodInvocationCreation(AGSymbol.alloc(NATText.atValue(opr.getText())),
   	                                                          NATTable.atValue(new ATObject[] { operand }),
   	                                                          NATTable.EMPTY));
+  	  locate(opr, snd);
+  	  return snd;
   }
   
   public AGBegin emptyMethodBody() {
   	  return new AGBegin(NATTable.EMPTY);
+  }
+  
+  protected String fileName_ = "";
+  
+  public void setFileName(String fileName) {
+  	fileName_ = fileName;
+  }
+  
+  public void locate(AST ast, ATAbstractGrammar ag) {
+    ag.impl_setLocation(new SourceLocation(ast.getLine(),
+                                      ast.getColumn(),
+                                      fileName_));
   }
 
 } // end TreeWalker preamble
@@ -734,26 +748,26 @@ definition returns [ATDefinition def] throws InterpreterException
   	ATBegin bdy;
   	ATExpression ann =NATTable.EMPTY; }
           : { val = AGSymbol.jAlloc("nil"); }
-            #(AGDEFFIELD nam=symbol (val=expression)?) { def = new AGDefField(nam, val); }
+            #(AGDEFFIELD nam=symbol (val=expression)?) { def = new AGDefField(nam, val); locate(#AGDEFFIELD, def); }
           | { bdy = emptyMethodBody(); } 
-            #(AGDEFFUN #(AGAPL nam=symbol pars=params) (ann=expression)? (bdy=begin)? ) { def = new AGDefFunction(nam, pars, bdy, ann); }
+            #(AGDEFFUN #(AGAPL nam=symbol pars=params) (ann=expression)? (bdy=begin)? ) { def = new AGDefFunction(nam, pars, bdy, ann); locate(#AGDEFFUN, def); }
           | { bdy = emptyMethodBody(); }
-            #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) (ann=expression)? (bdy=begin)? ) { def = new AGDefExternalMethod(rcv, nam, pars, bdy, ann); }
+            #(AGDEFEXTMTH rcv=symbol #(AGAPL nam=symbol pars=params) (ann=expression)? (bdy=begin)? ) { def = new AGDefExternalMethod(rcv, nam, pars, bdy, ann); locate(#AGDEFEXTMTH, def); }
           | { val = AGSymbol.jAlloc("nil"); }
-            #(AGDEFEXTFLD rcv=symbol nam=symbol (val=expression)? )  { def = new AGDefExternalField(rcv, nam, val); }
+            #(AGDEFEXTFLD rcv=symbol nam=symbol (val=expression)? )  { def = new AGDefExternalField(rcv, nam, val); locate(#AGDEFEXTFLD, def); }
           | { bdy = emptyMethodBody(); }
-            #(AGDEFTABLE nam=symbol idx=expression (bdy=begin)? ) { def = new AGDefTable(nam,idx,bdy); }
+            #(AGDEFTABLE nam=symbol idx=expression (bdy=begin)? ) { def = new AGDefTable(nam,idx,bdy); locate(#AGDEFTABLE, def); }
           | #(AGMULTIDEF pars=params 
             { val= NATTable.ofSize(pars.elements_.length); } 
             (val=expression)? ) 
-            { def = new AGMultiDefinition(pars,val); }
-          | #(AGDEFTYPE nam=symbol pars=table) { def = new AGDefType(nam, pars); } // pars = the parent type tags here
+            { def = new AGMultiDefinition(pars,val); locate(#AGMULTIDEF, def); }
+          | #(AGDEFTYPE nam=symbol pars=table) { def = new AGDefType(nam, pars); locate(#AGDEFTYPE, def); } // pars = the parent type tags here
           ;
 
 importstmt returns [ATImport imp] throws InterpreterException
   { imp = null;
   	ATExpression host, aliases, excludes; }
-          : #(AGIMPORT host=expression aliases=expression excludes=expression) { imp = new AGImport(host, aliases, excludes); }
+          : #(AGIMPORT host=expression aliases=expression excludes=expression) { imp = new AGImport(host, aliases, excludes); locate(#AGIMPORT,imp); }
           ;
 
 assignment returns [ATAssignment ass] throws InterpreterException
@@ -761,10 +775,10 @@ assignment returns [ATAssignment ass] throws InterpreterException
     ATSymbol nam;
     ATExpression rcv, val, idx;
     NATTable par; }
-          : #(AGASSVAR nam=symbol val=expression) { ass = new AGAssignVariable(nam, val); }
-          | #(AGASSTAB #(AGTBL rcv=expression idx=expression) val=expression) { ass = new AGAssignTable(rcv, idx, val); }
-          | #(AGASSFLD #(AGSND rcv=expression #(AGFSL nam=symbol)) val=expression) { ass = new AGAssignField(rcv, nam, val); }
-          | #(AGMULTIASS par=params val=expression) { ass = new AGMultiAssignment(par, val); }
+          : #(AGASSVAR nam=symbol val=expression) { ass = new AGAssignVariable(nam, val); locate(#AGASSVAR,ass); }
+          | #(AGASSTAB #(AGTBL rcv=expression idx=expression) val=expression) { ass = new AGAssignTable(rcv, idx, val); locate(#AGASSTAB,ass); }
+          | #(AGASSFLD #(AGSND rcv=expression #(AGFSL nam=symbol)) val=expression) { ass = new AGAssignField(rcv, nam, val); locate(#AGASSFLD,ass); }
+          | #(AGMULTIASS par=params val=expression) { ass = new AGMultiAssignment(par, val); locate(#AGMULTIASS,ass); }
           ;
 
 expression returns [ATExpression exp] throws InterpreterException
@@ -773,16 +787,16 @@ expression returns [ATExpression exp] throws InterpreterException
   	ATStatement qstmt;
   	ATSymbol sel;
   	NATTable arg; }
-          : #(AGSND rcv=expression msg=message) { exp = new AGMessageSend(rcv,msg); }
-          | #(AGAPL rcv=expression arg=table) { exp = new AGApplication(rcv, arg); }
-          | #(AGSEL rcv=expression sel=symbol) { exp = new AGSelection(rcv, sel); }
-          | #(AGTBL rcv=expression idx=expression) { exp = new AGTabulation(rcv, idx); }
-          | #(AGQUO qexp=expression) { exp = new AGQuote(qexp); }
-          | #(AGQUOBEGIN qstmt=begin) { exp = new AGQuote(qstmt); }
-          | #(AGUNQ qexp=expression) { exp = new AGUnquote(qexp); }
-          | #(AGUQS qexp=expression) { exp = new AGUnquoteSplice(qexp); }
-          | #(AGSPL qexp=expression) { exp = new AGSplice(qexp); }
-          | #(AGLKU sel=symbol) { exp = new AGLookup(sel); }
+          : #(AGSND rcv=expression msg=message) { exp = new AGMessageSend(rcv,msg); locate(#AGSND,exp); }
+          | #(AGAPL rcv=expression arg=table) { exp = new AGApplication(rcv, arg); locate(#AGAPL,exp); }
+          | #(AGSEL rcv=expression sel=symbol) { exp = new AGSelection(rcv, sel); locate(#AGSEL,exp); }
+          | #(AGTBL rcv=expression idx=expression) { exp = new AGTabulation(rcv, idx); locate(#AGTBL,exp); }
+          | #(AGQUO qexp=expression) { exp = new AGQuote(qexp); locate(#AGQUO,exp); }
+          | #(AGQUOBEGIN qstmt=begin) { exp = new AGQuote(qstmt); locate(#AGQUOBEGIN,exp); }
+          | #(AGUNQ qexp=expression) { exp = new AGUnquote(qexp); locate(#AGUNQ,exp); }
+          | #(AGUQS qexp=expression) { exp = new AGUnquoteSplice(qexp); locate(#AGUQS,exp); }
+          | #(AGSPL qexp=expression) { exp = new AGSplice(qexp); locate(#AGSPL,exp); }
+          | #(AGLKU sel=symbol) { exp = new AGLookup(sel); locate(#AGLKU,exp); }
           | exp=message
           | exp=symbol
           | exp=binop
@@ -793,10 +807,10 @@ message returns [ATExpression msg] throws InterpreterException
   { msg = null;
   	ATExpression exp;
   	ATSymbol sel; NATTable arg; ATExpression ann = NATTable.EMPTY; }
-  	      : #(AGMSG #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGMethodInvocationCreation(sel,arg,ann); }
-  	      | #(AGFSL sel=symbol (ann=expression)? ) { msg = new AGFieldSelectionCreation(sel,ann); }
-  	      | #(AGAMS #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGAsyncMessageCreation(sel,arg,ann); }
-  	      | #(AGDEL #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGDelegationCreation(sel,arg,ann); }
+  	      : #(AGMSG #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGMethodInvocationCreation(sel,arg,ann); locate(#AGMSG,msg); }
+  	      | #(AGFSL sel=symbol (ann=expression)? ) { msg = new AGFieldSelectionCreation(sel,ann); locate(#AGFSL,msg); }
+  	      | #(AGAMS #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGAsyncMessageCreation(sel,arg,ann); locate(#AGAMS,msg); }
+  	      | #(AGDEL #(AGAPL sel=symbol arg=table) (ann=expression)? ) { msg = new AGDelegationCreation(sel,arg,ann); locate(#AGDEL,msg); }
   	      | #(AGUSD exp=expression) { msg=exp; }
   	      ;
           
@@ -816,6 +830,7 @@ literal returns[ATExpression lit] throws InterpreterException
           : #(AGNBR nbr:NBR) {
           	try {
           		lit = NATNumber.atValue(Integer.parseInt(nbr.getText()));
+          		locate(#AGNBR, lit);
           	} catch (NumberFormatException e) {
           		throw new XParseError("unparsable number", e);
           	}
@@ -823,36 +838,37 @@ literal returns[ATExpression lit] throws InterpreterException
           | #(AGFRC frc:FRC) {
           	try {
           		lit = NATFraction.atValue(Double.parseDouble(frc.getText()));
+          		locate(#AGFRC, lit);
           	} catch(NumberFormatException e) {
           		throw new XParseError("unparsable fraction", e);
           	}
           }
-          | #(AGTXT txt:TXT) { String text = txt.getText(); lit = NATText.atValue(text.substring(1, text.length() - 1)); }
+          | #(AGTXT txt:TXT) { String text = txt.getText(); lit = NATText.atValue(text.substring(1, text.length() - 1)); locate(#AGTXT,lit); }
           | lit=table
-          | #(AGCLO par=params body=begin) { lit = new AGClosureLiteral(par, body); }
+          | #(AGCLO par=params body=begin) { lit = new AGClosureLiteral(par, body); locate(#AGCLO,lit); }
           ;
           
 symbol returns [ATSymbol sym] throws InterpreterException { sym = null; ATExpression exp = null; }
-          : #(AGSYM txt:NAM) { sym = AGSymbol.alloc(NATText.atValue(txt.getText())); }
-          | #(AGKEY key:KEY) { sym = AGSymbol.alloc(NATText.atValue(key.getText())); }
-          | #(AGKSM ksm:KEYSYM) { sym = AGSymbol.alloc(NATText.atValue(ksm.getText())); }
-          | #(AGCMP cmp:CMP) { sym = AGSymbol.alloc(NATText.atValue(cmp.getText())); }
-          | #(AGADD add:ADD) { sym = AGSymbol.alloc(NATText.atValue(add.getText())); }
-          | #(AGMUL mul:MUL) { sym = AGSymbol.alloc(NATText.atValue(mul.getText())); }
-          | #(AGPOW pow:POW) { sym = AGSymbol.alloc(NATText.atValue(pow.getText())); }
-          | #(AGASY asy:ASSNAM) { sym = AGAssignmentSymbol.jAlloc(asy.getText()); }
+          : #(AGSYM txt:NAM) { sym = AGSymbol.alloc(NATText.atValue(txt.getText())); locate(#AGSYM,sym); }
+          | #(AGKEY key:KEY) { sym = AGSymbol.alloc(NATText.atValue(key.getText())); locate(#AGKEY,sym); }
+          | #(AGKSM ksm:KEYSYM) { sym = AGSymbol.alloc(NATText.atValue(ksm.getText())); locate(#AGKSM,sym); }
+          | #(AGCMP cmp:CMP) { sym = AGSymbol.alloc(NATText.atValue(cmp.getText())); locate(#AGCMP,sym); }
+          | #(AGADD add:ADD) { sym = AGSymbol.alloc(NATText.atValue(add.getText())); locate(#AGADD,sym); }
+          | #(AGMUL mul:MUL) { sym = AGSymbol.alloc(NATText.atValue(mul.getText())); locate(#AGMUL,sym); }
+          | #(AGPOW pow:POW) { sym = AGSymbol.alloc(NATText.atValue(pow.getText())); locate(#AGPOW,sym); }
+          | #(AGASY asy:ASSNAM) { sym = AGAssignmentSymbol.jAlloc(asy.getText()); locate(#AGASY,sym); }
           | AGSLF { sym = AGSelf._INSTANCE_; }
-          | #(AGUSM exp=expression) { sym = new AGUnquoteSymbol(exp); }
+          | #(AGUSM exp=expression) { sym = new AGUnquoteSymbol(exp); locate(#AGUSM,sym); }
           ;
 
 param returns [ATAbstractGrammar ag] throws InterpreterException
   { ag = null;
   	ATSymbol nam; ATExpression exp; }
-          : #(AGASSVAR nam=symbol exp=expression) { ag = new AGAssignVariable(nam, exp); }
+          : #(AGASSVAR nam=symbol exp=expression) { ag = new AGAssignVariable(nam, exp); locate(#AGASSVAR,ag); }
 		  | ag=symbol
-		  | #(AGUNQ exp=expression) { ag = new AGUnquote(exp); }
-          | #(AGUQS exp=expression) { ag = new AGUnquoteSplice(exp); }
-          | #(AGSPL exp=expression) { ag = new AGSplice(exp); }
+		  | #(AGUNQ exp=expression) { ag = new AGUnquote(exp); locate(#AGUNQ,ag); }
+          | #(AGUQS exp=expression) { ag = new AGUnquoteSplice(exp); locate(#AGUQS,ag); }
+          | #(AGSPL exp=expression) { ag = new AGSplice(exp); locate(#AGSPL,ag); }
 		  ;
 
 table returns [NATTable tab] throws InterpreterException
@@ -860,7 +876,7 @@ table returns [NATTable tab] throws InterpreterException
   	ATExpression expr;
   	LinkedList list = new LinkedList(); }
           : #(AGTAB (expr=expression { list.add(expr); })* )
-              { tab = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); }
+              { tab = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); locate(#AGTAB,tab); }
           ;
           
 begin returns [AGBegin bgn] throws InterpreterException
@@ -868,7 +884,7 @@ begin returns [AGBegin bgn] throws InterpreterException
   	ATStatement stmt;
   	LinkedList list = new LinkedList(); }
           : #(AGBEGIN (stmt=statement { list.add(stmt); })* )
-              { bgn = new AGBegin( (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); }
+              { bgn = new AGBegin((list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()]))); locate(#AGBEGIN,bgn); }
           ;
           
 params returns [NATTable par] throws InterpreterException
@@ -876,5 +892,5 @@ params returns [NATTable par] throws InterpreterException
   	ATAbstractGrammar formal;
   	LinkedList list = new LinkedList(); }
           : #(AGTAB (formal=param { list.add(formal); })* )
-              { par = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); }
+              { par = (list.isEmpty()) ? NATTable.EMPTY : NATTable.atValue((ATObject[]) list.toArray(new ATObject[list.size()])); locate(#AGTAB,par); }
           ;

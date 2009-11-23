@@ -40,7 +40,7 @@ public interface ParserFactory {
 
 	public CharScanner createLexer(InputStream source);
 	
-	public AmbientTalkParser createParser(CharScanner lexer);
+	public AmbientTalkParser createParser(String fileName, CharScanner lexer);
 	
-	public AmbientTalkTreeWalker createTreeWalker();
+	public AmbientTalkTreeWalker createTreeWalker(String fileName);
 }

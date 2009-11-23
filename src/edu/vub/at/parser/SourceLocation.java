@@ -1,6 +1,6 @@
 /**
  * AmbientTalk/2 Project
- * Parser.java created on Aug 21, 2006 at 4:53:45 PM
+ * SourceLocation.java created on 22 nov 2009 at 17:48:28
  * (c) Programming Technology Lab, 2006 - 2007
  * Authors: Tom Van Cutsem & Stijn Mostinckx
  * 
@@ -27,28 +27,28 @@
  */
 package edu.vub.at.parser;
 
-import antlr.ANTLRException;
-import antlr.collections.AST;
-import edu.vub.at.exceptions.InterpreterException;
-import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
-
 /**
- * Allowing for pluggable parser extensions, the {@link NATParser} class uses an abstract factory to create
- * both the Lexer, Parser and TreeWalker. In order to make the different implementations interchangable, they
- * must all implement a common interface. This interface details the functionality expected from a TreeWalker.
+ * @author tvcutsem
+ *
+ * A SourceLocation remembers an AST's filename, line number and column number.
  * 
- * @author smostinc
  */
-public abstract class AmbientTalkTreeWalker extends antlr.TreeParser {
+public class SourceLocation implements java.io.Serializable {
 
-	protected final String fileName_;
+	public final int line;
+	public final int column;
+	public final String fileName;
 	
-	public AmbientTalkTreeWalker(String fileName) {
-		fileName_ = fileName;
+	public SourceLocation(int line, int col, String fileName) {
+		this.line = line;
+		this.column = col;
+		this.fileName = fileName;
 	}
 	
-	/**
-	 * Transforms an ANTLR-specific abstract syntax tree to an AmbientTalk representation.
-	 */
-	public abstract NATAbstractGrammar walkAST(AST tree) throws InterpreterException, ANTLRException;
+	public String toString() {
+		int slashIdx = fileName.lastIndexOf("/");
+		return line + ":" + column + ":" +
+		         (slashIdx == -1 ? fileName : fileName.substring(slashIdx+1));
+	}
+	
 }
