@@ -106,7 +106,7 @@ public class NATParser extends NATByCopy {
 	public static final NATParser _INSTANCE_ = new NATParser();
 	
 	public ATAbstractGrammar base_parse(ATText source) throws InterpreterException {
-		return parse(null, source.asNativeText().javaValue);
+		return parse("read", source.asNativeText().javaValue);
 	}
 
 	public static ATAbstractGrammar parse(String filename, InputStream source) throws InterpreterException {
