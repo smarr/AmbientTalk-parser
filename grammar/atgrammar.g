@@ -1,4 +1,7 @@
-header { package edu.vub.at.parser; }
+header {package edu.vub.at.parser;
+import java.util.List;
+import java.util.LinkedList;
+}
 
 class ParserImpl extends Parser;
 
@@ -72,18 +75,24 @@ AST keywords2canonical(AST keywordparameterlist) {
 } /* end Parser class preamble */
 
 // Ambienttalk/2 programs consist of statements separated by semicolons
-program : globalstatementlist;
+program! : gsl:globalstatementlist EOF { #program = #gsl; };
 
 // TODO: refactor duplicated code by using an extra token parameter to abstract EOF and RBC tokens
 // an optional terminating semicolon is allowed
 // a global statementlist must always end with EOF
 globalstatementlist!: sts:globalstatements { #globalstatementlist = #([AGBEGIN,"begin"], #sts); };
-globalstatements!: stmt:statement stmts:moreglobalstatements[#stmt] { #globalstatements = #stmts; };
-moreglobalstatements![AST stmt]: (SMC EOF) => SMC EOF { #moreglobalstatements = #stmt; }
-                               | EOF { #moreglobalstatements = #stmt; }
-                               | SMC gsts:globalstatements { #stmt.setNextSibling(#gsts);
-                         	                                 #moreglobalstatements = #stmt; }
-                               ;
+globalstatements! { LinkedList l = new LinkedList(); } :
+	(st:statement { l.addLast(#st); } (SMC | EOF))+ 
+	{
+		AST first = (AST) l.removeFirst();
+		AST el = first;
+		while(! l.isEmpty()) {
+			AST next = (AST) l.removeFirst();
+			el.setNextSibling(next);
+			el = next;
+		}
+		#globalstatements = first;
+	};
 
 // an optional terminating semicolon is allowed
 // a statementlist must always end with RBC
