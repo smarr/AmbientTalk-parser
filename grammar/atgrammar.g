@@ -96,14 +96,20 @@ globalstatements! { LinkedList l = new LinkedList(); } :
 
 // an optional terminating semicolon is allowed
 // a statementlist must always end with RBC
-statementlist!: sts:statements { #statementlist = #([AGBEGIN,"begin"], #sts); }
-              | RBC { #statementlist = #([AGBEGIN,"begin"], #([SMC])); };
-statements!: stmt:statement stmts:morestatements[#stmt] { #statements = #stmts; };
-morestatements![AST stmt]: (SMC RBC) => SMC RBC { #morestatements = #stmt; }
-                         | RBC { #morestatements = #stmt; }
-                         | SMC msts:statements { #stmt.setNextSibling(#msts);
-                         	                       #morestatements = #stmt; }
-                         ;
+statementlist! { LinkedList l = new LinkedList(); } :
+	RBC { #statementlist = #([AGBEGIN,"begin"], #([SMC])); }
+	|  st1:statement (SMC st:statement { l.addLast(#st); } )* ((SMC)? RBC)
+	{
+		AST first = #st1;
+		AST el = first;
+		while(! l.isEmpty()) {
+			AST next = (AST) l.removeFirst();
+			el.setNextSibling(next);
+			el = next;
+		}
+		#statementlist = #([AGBEGIN, "begin"], first);
+	};
+
 
 // Statements can be either definitions assignments or ordinary expressions
 statement:  ("def"! definition)
