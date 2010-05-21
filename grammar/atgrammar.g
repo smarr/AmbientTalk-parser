@@ -434,7 +434,13 @@ variable:  symbol
         |! HSH! uexp:operand { #variable = #([AGUSM,"unquote-symbol"], uexp); }
         ;
          
-symbol!: var:NAM { #symbol = #([AGSYM,"symbol"], var); };
+symbol: kwsymbol
+      | namsymbol
+      ;
+
+kwsymbol!: var:KEYSYM { #kwsymbol = #([AGKSM,"symbol"], var); };
+
+namsymbol!: var:NAM { #namsymbol = #([AGSYM,"symbol"], var); };
          
 pseudovariable!: "self" { #pseudovariable = #[AGSLF,"self"]; };
 

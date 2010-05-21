@@ -223,5 +223,9 @@ public class ATWalkerTest extends TestCase {
 		testWalker("o<-m(1)@x");
 		testWalker("o.m(1)@[x,y]");
 	}
+	
+	public void testKeywordedFunctions() {
+		testWalker("if:then:else:(a,b,c)", "if:then:else:(a,b,c)");
+	}
 
 }

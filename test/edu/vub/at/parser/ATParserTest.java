@@ -498,4 +498,11 @@ public class ATParserTest extends TestCase {
 				  "(begin (number 1))");
 	}
 	
+	public void testKeywordedFunctions() throws TokenStreamException, CharStreamException {
+		testParse("if: a then: b else: c",
+		          "( begin ( apply ( symbol if:then:else: ) ( table ( symbol a ) ( symbol b ) ( symbol c ) ) ) )");
+		testParse("if:then:else:(a,b,c)",
+		          "( begin ( apply ( symbol if:then:else: ) ( table ( symbol a ) ( symbol b ) ( symbol c ) ) ) )");
+	}
+	
 }
