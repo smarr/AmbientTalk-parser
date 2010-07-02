@@ -123,7 +123,7 @@ public class NATParser extends NATByCopy {
 				// Traverse the tree created by the parser
 				return walker.walkAST(tree);
 			} catch(RecognitionException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				source.reset();
 				throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);
 			} catch(ANTLRException e) {
