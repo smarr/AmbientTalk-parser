@@ -68,6 +68,7 @@ public class ATWalkerTest extends TestCase {
 	}
 	
 	public void testStatementGrammar() {
+		testWalker("");
 		testWalker("a; b; c");
 		testWalker("def x", "def x := nil");
 		testWalker("def x := 5");

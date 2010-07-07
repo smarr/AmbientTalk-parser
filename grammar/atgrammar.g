@@ -82,9 +82,9 @@ program! : gsl:globalstatementlist EOF { #program = #gsl; };
 // a global statementlist must always end with EOF
 globalstatementlist!: sts:globalstatements { #globalstatementlist = #([AGBEGIN,"begin"], #sts); };
 globalstatements! { LinkedList l = new LinkedList(); } :
-	(st:statement { l.addLast(#st); } (SMC | EOF))+ 
+	(st:statement { l.addLast(#st); } (SMC | EOF))*
 	{
-		AST first = (AST) l.removeFirst();
+		AST first = l.isEmpty() ? astFactory.create() : (AST) l.removeFirst();
 		AST el = first;
 		while(! l.isEmpty()) {
 			AST next = (AST) l.removeFirst();

@@ -101,6 +101,7 @@ public class ATParserTest extends TestCase {
 	 * covers all individual statement abstract grammar elements
 	 */
 	public void testStatementGrammar() {
+		testParse("", "(begin)");
 		testParse("a;b;c",
 				 "(begin (symbol a) (symbol b) (symbol c))");
 		testParse("a;b;c;",
