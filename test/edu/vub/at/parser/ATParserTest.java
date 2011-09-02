@@ -36,8 +36,7 @@ import edu.vub.at.parser.TreeWalkerImpl;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-
-import org.apache.regexp.RE;
+import java.util.regex.Pattern;
 
 import antlr.CharStreamException;
 import antlr.CommonAST;
@@ -79,7 +78,9 @@ public class ATParserTest extends TestCase {
 			CommonAST parseTree = (CommonAST)parser.getAST();
 			System.out.println(parseTree.toStringList());
 			
-            assertEquals(new RE("\\s").subst(expectedOutput, ""), new RE("\\s").subst(parseTree.toStringList(), ""));
+            assertEquals(
+            		Pattern.compile("\\s").matcher(expectedOutput).replaceAll(""),
+            		Pattern.compile("\\s").matcher(parseTree.toStringList()).replaceAll(""));
 		} catch(Exception e) {
 			fail("Exception: "+e); 
 		}

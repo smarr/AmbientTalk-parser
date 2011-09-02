@@ -30,10 +30,9 @@ package edu.vub.at.parser;
 import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
 
 import java.io.ByteArrayInputStream;
+import java.util.regex.Pattern;
 
 import junit.framework.TestCase;
-
-import org.apache.regexp.RE;
 
 import antlr.CommonAST;
 
@@ -60,7 +59,9 @@ public class ATWalkerTest extends TestCase {
             // Traverse the tree created by the parser
             NATAbstractGrammar ag = walker.program(t);
             
-            assertEquals(new RE("\\s").subst(output, ""), new RE("\\s").subst(ag.meta_print().javaValue, ""));
+            assertEquals(
+            		Pattern.compile("\\s").matcher(output).replaceAll(""),
+            		Pattern.compile("\\s").matcher(ag.meta_print().javaValue).replaceAll(""));
         } catch(Exception e) {
         	e.printStackTrace();
             fail("exception: "+e);
