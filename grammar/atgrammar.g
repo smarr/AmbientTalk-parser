@@ -455,6 +455,7 @@ class LexerImpl extends Lexer;
 
 options {
   k = 3;
+  charVocabulary='\u0000'..'\uFFFE';
 }
 
 // Protected Scanner Tokens

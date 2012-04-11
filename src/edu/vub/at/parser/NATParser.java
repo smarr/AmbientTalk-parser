@@ -37,9 +37,15 @@ import edu.vub.at.objects.natives.NATByCopy;
 import edu.vub.at.objects.natives.NATText;
 import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
 
-import java.io.ByteArrayInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 
 import antlr.ANTLRException;
 import antlr.ASTFactory;
@@ -59,7 +65,11 @@ public class NATParser extends NATByCopy {
 	public static ParserFactory _FACTORY_ = new ParserFactory() {
 		public CharScanner createLexer(InputStream source) {
 			return new LexerImpl(source);
-		};
+		}
+		
+		public CharScanner createLexer(Reader source) {
+			return new LexerImpl(source);
+		}
 		
 		public AmbientTalkParser createParser(String fileName, final CharScanner lexer) {
 			final ParserImpl parser_ = new ParserImpl(lexer);
@@ -110,34 +120,47 @@ public class NATParser extends NATByCopy {
 	}
 
 	public static ATAbstractGrammar parse(String filename, InputStream source) throws InterpreterException {
+		CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+		decoder.onMalformedInput(CodingErrorAction.REPORT);
+		decoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
+		
+		BufferedReader reader = new BufferedReader(new InputStreamReader(source, decoder));
 		try {
-			try {
-				CharScanner lexer = _FACTORY_.createLexer(source);
-				AmbientTalkParser parser = _FACTORY_.createParser(filename, lexer);
-				AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker(filename);
-				source.mark(source.available());
-				
-				// Parse the input expression
-			    AST tree = parser.parseProgram();
-
-				// Traverse the tree created by the parser
-				return walker.walkAST(tree);
-			} catch(RecognitionException e) {
-				//e.printStackTrace();
-				source.reset();
-				throw new XParseError(source, e.getMessage(), e.fileName, e.line, e.column, e);
-			} catch(ANTLRException e) {
-				throw new XParseError(e.getMessage(), e);
-			}
-	    } catch (IOException e) {
-	    	throw new XIOProblem(e);
-	    }
+			reader.mark(source.available());
+			return parse(filename, reader);
+		} catch (IOException e) {
+			throw new XIOProblem(e);
+		}
 	}
 	
 	public static ATAbstractGrammar parse(String filename, String source) throws InterpreterException {
-		return parse(filename, new ByteArrayInputStream(source.getBytes()));
+		StringReader reader = new StringReader(source);
+		try {
+			reader.mark(source.length());
+			return parse(filename, reader);
+		} catch (IOException e) {
+			throw new XIOProblem(e);
+		}
 	}
 	
+	public static ATAbstractGrammar parse(String filename, Reader reader) throws InterpreterException {
+		try {
+			CharScanner lexer = _FACTORY_.createLexer(reader);
+			AmbientTalkParser parser = _FACTORY_.createParser(filename, lexer);
+			AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker(filename);
+			
+			// Parse the input expression
+		    AST tree = parser.parseProgram();
+
+			// Traverse the tree created by the parser
+			return walker.walkAST(tree);
+		} catch(RecognitionException e) {
+			throw new XParseError(reader, e.getMessage(), e.fileName, e.line, e.column, e);
+		} catch(ANTLRException e) {
+			throw new XParseError(e.getMessage(), e);
+		}
+	}
+
 	public NATText meta_print() throws InterpreterException {
 		return NATText.atValue("<native object: parser>");
 	}

@@ -34,8 +34,8 @@ import edu.vub.at.parser.LexerImpl;
 import edu.vub.at.parser.ParserImpl;
 import edu.vub.at.parser.TreeWalkerImpl;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.regex.Pattern;
 
 import antlr.CharStreamException;
@@ -53,7 +53,7 @@ public class ATParserTest extends TestCase {
 
 	public static NATAbstractGrammar parseProgram(String parserInput) throws InterpreterException {
 			try {
-				InputStream input = new ByteArrayInputStream(parserInput.getBytes());
+				Reader input = new StringReader(parserInput);
 				LexerImpl lexer = new LexerImpl(input);
 				ParserImpl parser = new ParserImpl(lexer);
 				parser.program();
@@ -70,7 +70,7 @@ public class ATParserTest extends TestCase {
 	
 	private static void testParse(String parserInput, String expectedOutput) {
 		try {
-			InputStream input = new ByteArrayInputStream(parserInput.getBytes());
+			Reader input = new StringReader(parserInput);
 			LexerImpl lexer = new LexerImpl(input);
 			ParserImpl parser = new ParserImpl(lexer);
 			parser.program();
@@ -87,7 +87,7 @@ public class ATParserTest extends TestCase {
 	}
 	
 	protected void showTokenStreamOf(String text) throws CharStreamException, TokenStreamException {
-		InputStream input = new ByteArrayInputStream(text.getBytes());
+		Reader input = new StringReader(text);
 		LexerImpl lexer = new LexerImpl(input);
 		Token t = lexer.nextToken();
 		while (t.getType() != Token.EOF_TYPE) {
@@ -349,6 +349,12 @@ public class ATParserTest extends TestCase {
 				 "(begin (closure (table (symbol x) (symbol y)) (begin (+ (symbol x) (symbol y)))))");
 		testParse("{ a := 2; b; }",
 				 "(begin (closure (table) (begin (var-set (symbol a) (number 2)) (symbol b))))");
+		
+		// Test unicode string literals as well
+		testParse("\"a café at the VÜB\"",
+		  "( begin ( text \"a café at the VÜB\" ))");
+		testParse("\"unicode snowman for you – ☃\"",
+		  "( begin ( text \"unicode snowman for you – ☃\" ))");
 	}
 	
 	/**
@@ -506,5 +512,4 @@ public class ATParserTest extends TestCase {
 		testParse("if:then:else:(a,b,c)",
 		          "( begin ( apply ( symbol if:then:else: ) ( table ( symbol a ) ( symbol b ) ( symbol c ) ) ) )");
 	}
-	
 }

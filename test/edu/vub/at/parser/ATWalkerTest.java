@@ -29,7 +29,7 @@ package edu.vub.at.parser;
 
 import edu.vub.at.objects.natives.grammar.NATAbstractGrammar;
 
-import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 import java.util.regex.Pattern;
 
 import junit.framework.TestCase;
@@ -48,7 +48,7 @@ public class ATWalkerTest extends TestCase {
 	
 	private void testWalker(String input, String output) {
         try {
-            LexerImpl lexer = new LexerImpl(new ByteArrayInputStream(input.getBytes()));
+            LexerImpl lexer = new LexerImpl(new StringReader(input));
             ParserImpl parser = new ParserImpl(lexer);
             // Parse the input expression
             parser.program();

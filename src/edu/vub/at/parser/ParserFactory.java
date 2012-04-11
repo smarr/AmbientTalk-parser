@@ -28,6 +28,7 @@
 package edu.vub.at.parser;
 
 import java.io.InputStream;
+import java.io.Reader;
 
 import antlr.CharScanner;
 
@@ -39,7 +40,8 @@ import antlr.CharScanner;
 public interface ParserFactory {
 
 	public CharScanner createLexer(InputStream source);
-	
+	public CharScanner createLexer(Reader source);
+
 	public AmbientTalkParser createParser(String fileName, CharScanner lexer);
 	
 	public AmbientTalkTreeWalker createTreeWalker(String fileName);

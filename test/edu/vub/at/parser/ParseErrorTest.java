@@ -29,8 +29,7 @@ package edu.vub.at.parser;
 
 import edu.vub.at.exceptions.InterpreterException;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.StringReader;
 
 import junit.framework.TestCase;
 import antlr.CommonAST;
@@ -45,8 +44,7 @@ public class ParseErrorTest extends TestCase {
 	
 	public static void checkParseError(String parserInput, String errmsg) {
 		try {
-			InputStream input = new ByteArrayInputStream(parserInput.getBytes());
-			LexerImpl lexer = new LexerImpl(input);
+			LexerImpl lexer = new LexerImpl(new StringReader(parserInput));
 			ParserImpl parser = new ParserImpl(lexer);
 			parser.program();
 
