@@ -144,11 +144,11 @@ public class NATParser extends NATByCopy {
 	}
 	
 	public static ATAbstractGrammar parse(String filename, Reader reader) throws InterpreterException {
+		CharScanner lexer = _FACTORY_.createLexer(reader);
+		AmbientTalkParser parser = _FACTORY_.createParser(filename, lexer);
+		AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker(filename);
+		
 		try {
-			CharScanner lexer = _FACTORY_.createLexer(reader);
-			AmbientTalkParser parser = _FACTORY_.createParser(filename, lexer);
-			AmbientTalkTreeWalker walker = _FACTORY_.createTreeWalker(filename);
-			
 			// Parse the input expression
 		    AST tree = parser.parseProgram();
 
@@ -157,7 +157,7 @@ public class NATParser extends NATByCopy {
 		} catch(RecognitionException e) {
 			throw new XParseError(reader, e.getMessage(), e.fileName, e.line, e.column, e);
 		} catch(ANTLRException e) {
-			throw new XParseError(e.getMessage(), e);
+			throw new XParseError(reader, e.getMessage(), lexer.getFilename(), lexer.getLine(), lexer.getColumn(), e);
 		}
 	}
 

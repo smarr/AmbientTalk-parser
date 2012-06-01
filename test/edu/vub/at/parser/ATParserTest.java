@@ -36,6 +36,7 @@ import edu.vub.at.parser.TreeWalkerImpl;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.util.regex.Pattern;
 
 import antlr.CharStreamException;
@@ -355,6 +356,20 @@ public class ATParserTest extends TestCase {
 		  "( begin ( text \"a café at the VÜB\" ))");
 		testParse("\"unicode snowman for you – ☃\"",
 		  "( begin ( text \"unicode snowman for you – ☃\" ))");
+	}
+	
+	public void testInvalidEncodingInput() throws InterpreterException {
+		String givenInput = "Negation_sign: ¬; Accented_e: é ";
+		try {
+			String brokenInput = new String(givenInput.getBytes("ISO-8859-1"), "UTF-8");
+			NATParser.parse("testfile", brokenInput);
+			fail("Parsing a string with invalid bytes should raise an error");
+		} catch (UnsupportedEncodingException ignored) {
+			/* won't happen */
+		} catch (XParseError e) {
+			assertEquals("The error should reference line 1, column 16", 1, e.getLine());
+			assertEquals("The error should reference line 1, column 16", 16, e.getColumn());
+		}
 	}
 	
 	/**
